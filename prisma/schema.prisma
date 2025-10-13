@@ -1,0 +1,181 @@
+// DeliGo Database Schema
+// PostgreSQL database hosted on Supabase
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Vendor Profile
+model Vendor {
+  id                String      @id @default(uuid())
+  authId            String      @unique // Supabase Auth user ID
+  email             String      @unique
+  phone             String?
+
+  // Business Info
+  businessName      String
+  businessNameRw    String?     // Kinyarwanda business name
+  businessType      String      // restaurant, cafe, food_truck, etc.
+  description       String?
+  descriptionRw     String?
+  slug              String      @unique // For storefront URL
+
+  // Media
+  logoUrl           String?
+  coverUrl          String?
+
+  // Location
+  address           String?
+  addressRw         String?
+  latitude          Float?
+  longitude         Float?
+  deliveryRange     Float       @default(5.0) // in kilometers
+
+  // Contact
+  businessPhone     String
+  whatsappNumber    String?
+
+  // Business Hours (JSON: {mon: {open: "08:00", close: "20:00", closed: false}, ...})
+  businessHours     Json?
+
+  // Status
+  isOnline          Boolean     @default(true)
+  isSetupComplete   Boolean     @default(false)
+
+  // Timestamps
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  categories        Category[]
+  menuItems         MenuItem[]
+  orders            Order[]
+
+  @@index([authId])
+  @@index([slug])
+  @@index([email])
+}
+
+// Menu Categories
+model Category {
+  id                String      @id @default(uuid())
+  vendorId          String
+  vendor            Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  name              String
+  nameRw            String?
+  description       String?
+  descriptionRw     String?
+
+  sortOrder         Int         @default(0)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  menuItems         MenuItem[]
+
+  @@index([vendorId])
+  @@index([vendorId, sortOrder])
+}
+
+// Menu Items
+model MenuItem {
+  id                String      @id @default(uuid())
+  vendorId          String
+  vendor            Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  categoryId        String
+  category          Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  name              String
+  nameRw            String?
+  description       String?
+  descriptionRw     String?
+
+  price             Float
+  imageUrl          String?
+
+  isAvailable       Boolean     @default(true)
+  sortOrder         Int         @default(0)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  orderItems        OrderItem[]
+
+  @@index([vendorId])
+  @@index([categoryId])
+  @@index([vendorId, isAvailable])
+}
+
+// Orders
+model Order {
+  id                String      @id @default(uuid())
+  orderNumber       String      @unique // Human-readable order number (e.g., "DEL-20250113-001")
+
+  vendorId          String
+  vendor            Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  // Customer Info
+  customerName      String
+  customerPhone     String
+  customerEmail     String?
+
+  // Delivery Info
+  deliveryType      String      // "delivery" or "pickup"
+  deliveryAddress   String?
+  deliveryNotes     String?
+
+  // Order Details
+  subtotal          Float
+  deliveryFee       Float       @default(0)
+  total             Float
+
+  // Status: new, preparing, ready, completed, cancelled
+  status            String      @default("new")
+
+  // Timestamps
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  completedAt       DateTime?
+
+  // Relations
+  items             OrderItem[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@index([vendorId, createdAt])
+  @@index([orderNumber])
+}
+
+// Order Items
+model OrderItem {
+  id                String      @id @default(uuid())
+
+  orderId           String
+  order             Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  menuItemId        String
+  menuItem          MenuItem    @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+
+  // Snapshot of item details at time of order
+  name              String
+  nameRw            String?
+  price             Float
+  quantity          Int
+  subtotal          Float       // price * quantity
+
+  notes             String?     // Special instructions
+
+  createdAt         DateTime    @default(now())
+
+  @@index([orderId])
+  @@index([menuItemId])
+}
