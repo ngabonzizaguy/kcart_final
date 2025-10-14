@@ -101,7 +101,7 @@ export default async function StorefrontPage({
               )}
 
               <div className="space-y-4">
-                {category.menuItems.map((item) => (
+                {category.menuItems.map((item: typeof category.menuItems[number]) => (
                   <Card key={item.id} hover padding="md">
                     <div className="flex gap-4">
                       {item.imageUrl && (
