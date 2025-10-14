@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast'
 export default function CompletePage() {
   const router = useRouter()
   const { showToast } = useToast()
-  const [storefront URL, setStorefrontUrl] = useState('')
+  const [storefrontUrl, setStorefrontUrl] = useState('')
   const [slug, setSlug] = useState('')
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
