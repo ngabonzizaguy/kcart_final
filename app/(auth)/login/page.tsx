@@ -19,7 +19,6 @@ export default function LoginPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Simple validation
     if (!email || !password) {
       showToast({
         type: 'error',
@@ -46,10 +45,9 @@ export default function LoginPage() {
 
       showToast({
         type: 'success',
-        message: 'Welcome back! Taking you to your dashboard...',
+        message: "You're in! Let's get you to your business center...",
       })
 
-      // Redirect to dashboard (layout will handle onboarding check)
       router.push('/dashboard')
       router.refresh()
     } catch {
@@ -64,7 +62,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
+      <Card className="w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-orange bg-clip-text text-transparent mb-2">
             DeliGo
