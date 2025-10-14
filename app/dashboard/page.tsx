@@ -44,7 +44,7 @@ export default async function DashboardPage() {
 
   const todayStats = {
     orders: todayOrders.length,
-    sales: todayOrders.reduce((sum, order) => sum + order.total, 0),
+    sales: todayOrders.reduce((sum: number, order) => sum + order.total, 0),
   }
 
   // Get this week's orders
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
 
   const weekStats = {
     orders: weekOrders.length,
-    sales: weekOrders.reduce((sum, order) => sum + order.total, 0),
+    sales: weekOrders.reduce((sum: number, order) => sum + order.total, 0),
   }
 
   // Get this month's orders
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
 
   const monthStats = {
     orders: monthOrders.length,
-    sales: monthOrders.reduce((sum, order) => sum + order.total, 0),
+    sales: monthOrders.reduce((sum: number, order) => sum + order.total, 0),
   }
 
   return (
