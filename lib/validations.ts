@@ -31,7 +31,7 @@ export const businessLocationSchema = z.object({
   addressRw: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  deliveryRange: z.number().min(1).max(50).default(5),
+  deliveryRange: z.number().min(1).max(50).optional(),
 })
 
 export const businessContactSchema = z.object({
