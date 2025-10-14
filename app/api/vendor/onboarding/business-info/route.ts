@@ -17,7 +17,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const validatedData = businessInfoSchema.parse(body)
+
+    // Validate with Zod schema - specific error messages
+    const validation = businessInfoSchema.safeParse(body)
+    if (!validation.success) {
+      const errorMessage = validation.error.issues[0]?.message || 'Invalid input'
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 400 }
+      )
+    }
+
+    const validatedData = validation.data
 
     // Check if vendor already exists
     let vendor = await prisma.vendor.findUnique({
@@ -27,18 +38,16 @@ export async function POST(request: NextRequest) {
     // Generate slug from business name
     let slug = generateSlug(validatedData.businessName)
 
-    // Ensure slug is unique
-    let slugExists = await prisma.vendor.findUnique({
+    // Check if slug is already taken by another vendor
+    const slugExists = await prisma.vendor.findUnique({
       where: { slug },
     })
 
-    let slugCounter = 1
-    while (slugExists && slugExists.id !== vendor?.id) {
-      slug = `${generateSlug(validatedData.businessName)}-${slugCounter}`
-      slugExists = await prisma.vendor.findUnique({
-        where: { slug },
-      })
-      slugCounter++
+    if (slugExists && slugExists.id !== vendor?.id) {
+      return NextResponse.json(
+        { error: 'A business with this name already exists. Please choose a different name.' },
+        { status: 400 }
+      )
     }
 
     if (vendor) {
@@ -72,11 +81,14 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Return full vendor object
     return NextResponse.json({ vendor })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Business info onboarding error:', error)
+
+    // Return specific error message
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'An unexpected error occurred' },
       { status: 500 }
     )
   }
