@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Card from '@/components/ui/Card'
-import { MapPin, Phone, Clock } from 'lucide-react'
+import { MapPin, Phone, AlertCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import Image from 'next/image'
 
@@ -30,7 +30,7 @@ export default async function StorefrontPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-warm">
+    <div className="min-h-screen bg-gradient-warm pb-20">
       {/* Cover Image */}
       {vendor.coverUrl && (
         <div className="relative h-48 md:h-64 w-full">
@@ -45,7 +45,15 @@ export default async function StorefrontPage({
       )}
 
       {/* Vendor Header */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* Offline Badge - Subtle */}
+        {!vendor.isOnline && (
+          <div className="mb-4 flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded-lg text-orange-700 text-sm">
+            <AlertCircle className="h-4 w-4" />
+            <span>Currently Offline</span>
+          </div>
+        )}
+
         <Card className="mb-6">
           <div className="flex items-start gap-4">
             {vendor.logoUrl && (
@@ -76,17 +84,12 @@ export default async function StorefrontPage({
                   <Phone className="h-4 w-4" />
                   <span>{vendor.businessPhone}</span>
                 </div>
-                {!vendor.isOnline && (
-                  <div className="px-3 py-1 bg-gray-200 rounded-full text-gray-700 font-medium">
-                    Currently Offline
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Menu */}
+        {/* Menu - Single Column List */}
         <div className="space-y-8">
           {vendor.categories.map((category) => (
             <section key={category.id}>
@@ -97,39 +100,34 @@ export default async function StorefrontPage({
                 <p className="text-gray-600 mb-4">{category.description}</p>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-4">
                 {category.menuItems.map((item) => (
-                  <Card key={item.id} hover>
-                    {item.imageUrl && (
-                      <div className="relative h-40 w-full mb-4 rounded-xl overflow-hidden">
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {item.name}
-                      </h3>
-                      {item.description && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          {item.description}
-                        </p>
+                  <Card key={item.id} hover padding="md">
+                    <div className="flex gap-4">
+                      {item.imageUrl && (
+                        <div className="relative w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden">
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
                       )}
-                      <div className="flex items-center justify-between mt-3">
-                        <span className="text-lg font-bold text-primary-600">
-                          {formatCurrency(item.price)}
-                        </span>
-                        {vendor.isOnline && (
-                          <button
-                            className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium"
-                          >
-                            Add to Cart
-                          </button>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 text-lg">
+                          {item.name}
+                        </h3>
+                        {item.description && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {item.description}
+                          </p>
                         )}
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xl font-bold text-primary-600">
+                            {formatCurrency(item.price)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -139,7 +137,7 @@ export default async function StorefrontPage({
               {category.menuItems.length === 0 && (
                 <Card>
                   <p className="text-center text-gray-500 py-8">
-                    No items available in this category yet
+                    Menu coming soon...
                   </p>
                 </Card>
               )}
@@ -155,6 +153,20 @@ export default async function StorefrontPage({
           )}
         </div>
       </div>
+
+      {/* Floating Action Button - Add to Cart */}
+      {vendor.isOnline && vendor.categories.some(cat => cat.menuItems.length > 0) && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            className="w-14 h-14 bg-gradient-orange text-white rounded-full shadow-warm hover:shadow-lg transform hover:scale-110 transition-all duration-200 flex items-center justify-center"
+            aria-label="View Cart"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
