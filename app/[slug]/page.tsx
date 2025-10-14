@@ -91,7 +91,7 @@ export default async function StorefrontPage({
 
         {/* Menu - Single Column List */}
         <div className="space-y-8">
-          {vendor.categories.map((category) => (
+          {vendor.categories.map((category: typeof vendor.categories[number]) => (
             <section key={category.id}>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
                 {category.name}
