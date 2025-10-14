@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+
+    // Validate with Zod schema
     const validatedData = businessInfoSchema.parse(body)
 
     // Check if vendor already exists
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Generate slug from business name
     let slug = generateSlug(validatedData.businessName)
 
-    // Ensure slug is unique
+    // Ensure slug is unique - auto-suggest alternatives
     let slugExists = await prisma.vendor.findUnique({
       where: { slug },
     })
@@ -72,11 +74,15 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Return full vendor object
     return NextResponse.json({ vendor })
-  } catch (error: any) {
+  } catch (error) {
+    // Log detailed error server-side for debugging
     console.error('Business info onboarding error:', error)
+
+    // Return user-friendly generic error to client for security
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Something went wrong' },
       { status: 500 }
     )
   }
