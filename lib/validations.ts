@@ -37,7 +37,7 @@ export const businessLocationSchema = z.object({
 export const businessContactSchema = z.object({
   businessPhone: z.string().min(10, 'Valid phone number required'),
   whatsappNumber: z.string().optional(),
-  businessHours: z.record(z.object({
+  businessHours: z.record(z.string(), z.object({
     open: z.string(),
     close: z.string(),
     closed: z.boolean(),
@@ -90,7 +90,7 @@ export const updateVendorProfileSchema = z.object({
   whatsappNumber: z.string().optional(),
   deliveryRange: z.number().min(1).max(50).optional(),
   isOnline: z.boolean().optional(),
-  businessHours: z.record(z.object({
+  businessHours: z.record(z.string(), z.object({
     open: z.string(),
     close: z.string(),
     closed: z.boolean(),
