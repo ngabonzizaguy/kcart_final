@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     // Validate with Zod schema - specific error messages
     const validation = businessInfoSchema.safeParse(body)
     if (!validation.success) {
-      const errorMessage = validation.error.errors[0]?.message || 'Invalid input'
+      const errorMessage = validation.error.issues[0]?.message || 'Invalid input'
       return NextResponse.json(
         { error: errorMessage },
         { status: 400 }
