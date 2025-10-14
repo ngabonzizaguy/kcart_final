@@ -3,9 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { signupSchema, type SignupInput } from '@/lib/validations'
 import { createClient } from '@/lib/supabase/client'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -16,55 +13,64 @@ export default function SignupPage() {
   const router = useRouter()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [businessName, setBusinessName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignupInput>({
-    resolver: zodResolver(signupSchema),
-  })
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-  const onSubmit = async (data: SignupInput) => {
+    // Simple validation
+    if (!businessName || !email || !password) {
+      showToast({
+        type: 'error',
+        message: 'Please fill in all fields',
+      })
+      return
+    }
+
+    if (password.length < 6) {
+      showToast({
+        type: 'error',
+        message: 'Minimum 6 characters',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       const supabase = createClient()
 
-      // Sign up user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
         options: {
           data: {
-            business_name: data.businessName,
+            business_name: businessName,
           },
         },
       })
 
-      if (signUpError) {
+      if (error) {
         showToast({
           type: 'error',
-          title: 'Signup Failed',
-          message: signUpError.message,
+          message: 'Something went wrong',
         })
         return
       }
 
-      if (authData.user) {
-        showToast({
-          type: 'success',
-          message: 'Account created! Starting onboarding...',
-        })
+      showToast({
+        type: 'success',
+        message: "Welcome! Let's get your restaurant online.",
+      })
 
-        // Redirect to onboarding
-        router.push('/onboarding/business-info')
-        router.refresh()
-      }
-    } catch (error) {
+      // Start onboarding immediately
+      router.push('/onboarding/business-info')
+      router.refresh()
+    } catch {
       showToast({
         type: 'error',
-        title: 'Error',
-        message: 'An unexpected error occurred',
+        message: 'Something went wrong',
       })
     } finally {
       setLoading(false)
@@ -73,46 +79,49 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-orange bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-orange bg-clip-text text-transparent mb-2">
             DeliGo
           </h1>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">
             Create your account
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm md:text-base">
             Start selling online today
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-5">
           <Input
             label="Business Name"
             type="text"
             placeholder="My Restaurant"
-            {...register('businessName')}
-            error={errors.businessName?.message}
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
             required
+            fullWidth
           />
 
           <Input
             label="Email"
             type="email"
             placeholder="you@example.com"
-            {...register('email')}
-            error={errors.email?.message}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
+            fullWidth
           />
 
           <Input
             label="Password"
             type="password"
-            placeholder="••••••••"
-            helperText="At least 6 characters"
-            {...register('password')}
-            error={errors.password?.message}
+            placeholder="Enter your password"
+            helperText="Minimum 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             required
+            fullWidth
           />
 
           <Button
@@ -120,6 +129,7 @@ export default function SignupPage() {
             fullWidth
             loading={loading}
             disabled={loading}
+            size="lg"
           >
             Create Account
           </Button>
@@ -130,7 +140,7 @@ export default function SignupPage() {
             Already have an account?{' '}
             <Link
               href="/login"
-              className="font-medium text-primary-600 hover:text-primary-700"
+              className="font-medium text-primary-600 hover:text-primary-700 underline"
             >
               Login
             </Link>
