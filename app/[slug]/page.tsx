@@ -155,7 +155,7 @@ export default async function StorefrontPage({
       </div>
 
       {/* Floating Action Button - Add to Cart */}
-      {vendor.isOnline && vendor.categories.some(cat => cat.menuItems.length > 0) && (
+      {vendor.isOnline && vendor.categories.some((cat: typeof vendor.categories[number]) => cat.menuItems.length > 0) && (
         <div className="fixed bottom-6 right-6 z-50">
           <button
             className="w-14 h-14 bg-gradient-orange text-white rounded-full shadow-warm hover:shadow-lg transform hover:scale-110 transition-all duration-200 flex items-center justify-center"
