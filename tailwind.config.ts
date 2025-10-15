@@ -70,6 +70,7 @@ const config: Config = {
         'slide-down': 'slideDown 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
         'spin-slow': 'spin 3s linear infinite',
+        'pulse-subtle': 'pulseSubtle 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -87,6 +88,10 @@ const config: Config = {
         scaleIn: {
           '0%': { transform: 'scale(0.9)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        pulseSubtle: {
+          '0%, 100%': { boxShadow: '0 8px 32px 0 rgba(255, 152, 0, 0.2)' },
+          '50%': { boxShadow: '0 8px 32px 0 rgba(255, 152, 0, 0.4)' },
         },
       },
       spacing: {
