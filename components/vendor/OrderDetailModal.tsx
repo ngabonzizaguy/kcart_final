@@ -91,16 +91,14 @@ export default function OrderDetailModal({
 
     return (
       <div className="flex flex-col sm:flex-row gap-2 mt-6">
-        {order.status !== 'cancelled' && (
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={handleCancelOrder}
-            disabled={isUpdating}
-          >
-            Cancel Order
-          </Button>
-        )}
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={handleCancelOrder}
+          disabled={isUpdating}
+        >
+          Cancel Order
+        </Button>
 
         {order.status === 'new' && (
           <Button
