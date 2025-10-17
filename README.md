@@ -23,6 +23,8 @@ DeliGo is a mobile-first, bilingual (English + Kinyarwanda) SaaS platform that e
 - Select (custom styled)
 - TextArea
 - LoadingSpinner
+- ImageUpload (drag/drop, preview, Supabase Storage)
+- QRCode (with customization options)
 
 ### ✅ **COMPLETED: Layout Components (100%)**
 - Sidebar (desktop navigation)
@@ -36,35 +38,50 @@ DeliGo is a mobile-first, bilingual (English + Kinyarwanda) SaaS platform that e
 - Protected route handling
 - Session management
 
-### ⚠️ **PARTIAL: Onboarding Wizard (25%)**
-**Completed:**
+### ✅ **COMPLETED: Onboarding Wizard (100%)**
+**All Steps Implemented:**
 - Onboarding layout
 - Step 1: Business Info (name, type, description)
-- API: POST /api/vendor/onboarding/business-info
-
-**TODO:**
-- Step 2: Media (logo, cover images)
+- Step 2: Media (logo, cover images with ImageUpload)
 - Step 3: Location (address, GPS, delivery range)
 - Step 4: Contact (phone, hours, WhatsApp)
-- Completion page (generate QR code, show storefront URL)
-- Image upload functionality
-- API routes for remaining steps
+- Completion page (QR code, storefront URL, next steps)
 
-### ⚠️ **PARTIAL: Vendor Dashboard (40%)**
-**Completed:**
+**API Routes:**
+- POST /api/vendor/onboarding/business-info
+- POST /api/vendor/onboarding/media
+- POST /api/vendor/onboarding/location
+- POST /api/vendor/onboarding/contact
+- POST /api/upload (image upload to Supabase Storage)
+
+### ✅ **COMPLETED: Vendor Dashboard - Orders (100%)**
+**Features:**
 - Dashboard layout with sidebar/bottom nav
 - Home page with metrics (Today, Week, Month)
-- Quick actions
-- API: GET/PATCH /api/vendor/profile
+- **Orders page with full functionality:**
+  - Real-time order updates (Supabase Realtime)
+  - Order filtering by status (all, new, preparing, ready, completed)
+  - OrderCard component for order display
+  - OrderDetailModal for viewing and updating orders
+  - Status workflow (new → preparing → ready → completed)
+  - Sound alerts for new orders
+  - Order counts by status
+
+**API Routes:**
+- GET /api/vendor/profile
+- PATCH /api/vendor/profile
+- GET /api/vendor/orders
+- PATCH /api/vendor/orders/[orderId]
+
+**Components:**
+- OrderCard (with status badges, customer info, order totals)
+- OrderDetailModal (full order details, status update controls)
 
 **TODO:**
-- Orders page with real-time updates
 - Menu management (full CRUD for categories and items)
 - Analytics page with charts
 - Profile/settings page
-- Quick actions dropdown (functional)
 - Online/offline toggle
-- Sound alerts for new orders
 
 ### ⚠️ **PARTIAL: Customer Storefront (60%)**
 **Completed:**
@@ -72,44 +89,25 @@ DeliGo is a mobile-first, bilingual (English + Kinyarwanda) SaaS platform that e
 - Vendor header with logo, cover, info
 - Menu display by categories
 - 404 page
+- Online/offline status indicator
 
 **TODO:**
 - Cart functionality (drawer, FAB)
 - Checkout flow
 - Order confirmation
 - Order tracking page
-- Real-time order status updates
+- Real-time order status updates for customers
 
-### ⚠️ **PARTIAL: API Routes (30%)**
-**Completed:**
-- /api/vendor/profile (GET, PATCH)
-- /api/vendor/onboarding/business-info (POST)
-
-**TODO:**
-- /api/vendor/onboarding/* (media, location, contact, complete)
-- /api/vendor/categories (CRUD)
-- /api/vendor/menu-items (CRUD)
-- /api/vendor/orders (GET, PATCH status)
-- /api/vendor/analytics (GET)
-- /api/customer/storefront/[slug] (GET)
-- /api/customer/orders (POST)
-- /api/upload (POST for image uploads)
-
-### ❌ **NOT STARTED: Real-Time Features (0%)**
-**TODO:**
+### ✅ **COMPLETED: Real-Time Features (Vendor Side)**
+**Implemented:**
 - Supabase Realtime subscriptions for orders
+- Real-time order notifications in vendor dashboard
 - Sound alerts for new orders
+- Live order status updates across vendor dashboard
+
+**TODO:**
 - Live order status updates for customers
 - Real-time dashboard metrics
-
-### ❌ **NOT STARTED: Additional Features (0%)**
-**TODO:**
-- Image upload to Supabase Storage
-- QR code generation
-- Business hours management
-- Delivery range calculator
-- Order history
-- Analytics charts (recharts)
 
 ## File Structure
 ```
@@ -121,22 +119,29 @@ kcart_final/
 │   ├── api/
 │   │   ├── vendor/
 │   │   │   ├── profile/route.ts ✅
-│   │   │   └── onboarding/business-info/route.ts ✅
+│   │   │   ├── orders/route.ts ✅
+│   │   │   ├── orders/[orderId]/route.ts ✅
+│   │   │   └── onboarding/
+│   │   │       ├── business-info/route.ts ✅
+│   │   │       ├── media/route.ts ✅
+│   │   │       ├── location/route.ts ✅
+│   │   │       └── contact/route.ts ✅
+│   │   ├── upload/route.ts ✅
 │   │   └── customer/ (TODO)
 │   ├── dashboard/
 │   │   ├── layout.tsx ✅
 │   │   ├── page.tsx ✅
-│   │   ├── orders/ (TODO)
+│   │   ├── orders/page.tsx ✅
 │   │   ├── menu/ (TODO)
 │   │   ├── analytics/ (TODO)
 │   │   └── profile/ (TODO)
 │   ├── onboarding/
 │   │   ├── layout.tsx ✅
 │   │   ├── business-info/page.tsx ✅
-│   │   ├── media/ (TODO)
-│   │   ├── location/ (TODO)
-│   │   ├── contact/ (TODO)
-│   │   └── complete/ (TODO)
+│   │   ├── media/page.tsx ✅
+│   │   ├── location/page.tsx ✅
+│   │   ├── contact/page.tsx ✅
+│   │   └── complete/page.tsx ✅
 │   ├── [slug]/
 │   │   ├── page.tsx ✅
 │   │   ├── checkout/ (TODO)
@@ -145,10 +150,10 @@ kcart_final/
 │   ├── layout.tsx ✅
 │   └── page.tsx ✅
 ├── components/
-│   ├── ui/ ✅ (Button, Input, Card, Modal, Toast, Select, TextArea, LoadingSpinner)
+│   ├── ui/ ✅ (Button, Input, Card, Modal, Toast, Select, TextArea, LoadingSpinner, ImageUpload, QRCode)
 │   ├── layout/ ✅ (Sidebar, BottomNav, LanguageSwitcher)
-│   ├── vendor/ (TODO - OrderCard, MenuItemCard, CategoryCard, etc.)
-│   └── customer/ (TODO - CartDrawer, CheckoutForm, OrderStatus, etc.)
+│   ├── vendor/ ✅ (OrderCard, OrderDetailModal)
+│   └── customer/ (TODO - CartDrawer, CheckoutForm, OrderStatus)
 ├── lib/
 │   ├── supabase/ ✅ (client, server, middleware)
 │   ├── prisma.ts ✅
@@ -210,12 +215,12 @@ kcart_final/
 
 ## Next Steps for Completion
 
-### Phase 1: Complete Onboarding (3-4 hours)
-- [ ] Media upload step
-- [ ] Location selection step
-- [ ] Contact info step
-- [ ] Completion page with QR code
-- [ ] Image upload API route
+### ✅ Phase 1: Complete Onboarding (DONE)
+- [x] Media upload step
+- [x] Location selection step
+- [x] Contact info step
+- [x] Completion page with QR code
+- [x] Image upload API route
 
 ### Phase 2: Menu Management (4-5 hours)
 - [ ] Categories page with CRUD
@@ -226,16 +231,16 @@ kcart_final/
 - [ ] Availability toggle
 - [ ] API routes for categories and items
 
-### Phase 3: Order Management (5-6 hours)
-- [ ] Orders page with filters
-- [ ] Order card component
-- [ ] Order detail modal
-- [ ] Status workflow (new → preparing → ready → completed)
-- [ ] Real-time order subscriptions
-- [ ] Sound alerts
-- [ ] API routes for orders
+### ✅ Phase 3: Order Management (DONE)
+- [x] Orders page with filters
+- [x] Order card component
+- [x] Order detail modal
+- [x] Status workflow (new → preparing → ready → completed)
+- [x] Real-time order subscriptions
+- [x] Sound alerts
+- [x] API routes for orders
 
-### Phase 4: Customer Flow (5-6 hours)
+### Phase 4: Customer Flow (5-6 hours) - IN PROGRESS
 - [ ] Cart state management (Zustand)
 - [ ] Cart drawer component
 - [ ] Checkout page
@@ -259,19 +264,34 @@ kcart_final/
 - [ ] Supabase RLS policies
 - [ ] Testing
 
-**Estimated Total Remaining Work:** 23-29 hours
+**Estimated Total Remaining Work:** 15-19 hours
 
 ## Current State Summary
 - **Foundation:** 100% complete
 - **UI Components:** 100% complete
-- **Features:** ~40% complete
-- **Total Project:** ~60% complete
+- **Onboarding:** 100% complete
+- **Orders Management:** 100% complete
+- **Customer Flow:** 0% complete
+- **Menu Management:** 0% complete
+- **Analytics:** 0% complete
+- **Total Project:** ~75% complete
 
 The architecture is solid. Most remaining work involves:
-1. Building on existing patterns (more pages, components)
-2. Connecting real-time features
-3. Completing CRUD operations
-4. Adding final polish
+1. Customer-facing features (cart, checkout, tracking)
+2. Menu management CRUD operations
+3. Analytics dashboard
+4. Final polish and deployment
+
+## Phase Progress Tracking
+
+| Phase | Status | Completion |
+|-------|--------|------------|
+| Phase 1: Onboarding | ✅ Complete | 100% |
+| Phase 2: Menu Management | ❌ Not Started | 0% |
+| Phase 3: Order Management | ✅ Complete | 100% |
+| Phase 4: Customer Flow | 🚧 In Progress | 0% |
+| Phase 5: Analytics & Profile | ❌ Not Started | 0% |
+| Phase 6: Polish & Deployment | ❌ Not Started | 0% |
 
 ## Technology Stack
 - **Frontend:** Next.js 14, TypeScript, Tailwind CSS
