@@ -36,6 +36,7 @@ model Vendor {
   latitude          Float?
   longitude         Float?
   deliveryRange     Float       @default(5.0) // in kilometers
+  deliveryFee       Float       @default(1000) // Delivery fee in RWF
 
   // Contact
   businessPhone     String
