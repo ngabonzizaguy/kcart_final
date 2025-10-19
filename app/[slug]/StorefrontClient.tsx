@@ -22,10 +22,12 @@ interface Category {
   id: string
   name: string
   nameRw: string | null
-  displayOrder: number
+  description: string | null
+  sortOrder: number
   menuItems: MenuItem[]
 }
 
+// CORRECTED: Changed bannerUrl → coverUrl, businessAddress → address
 interface Vendor {
   id: string
   slug: string
@@ -34,8 +36,8 @@ interface Vendor {
   description: string | null
   descriptionRw: string | null
   logoUrl: string | null
-  bannerUrl: string | null
-  businessAddress: string | null
+  coverUrl: string | null        // ✅ Changed from bannerUrl
+  address: string | null          // ✅ Changed from businessAddress
   businessPhone: string | null
   isOnline: boolean
   deliveryFee: number
@@ -68,11 +70,11 @@ export default function StorefrontClient({ vendor }: StorefrontClientProps) {
 
   return (
     <div className="min-h-screen bg-gradient-warm pb-24">
-      {/* Banner */}
-      {vendor.bannerUrl && (
+      {/* Banner - FIXED: Changed bannerUrl to coverUrl */}
+      {vendor.coverUrl && (
         <div className="w-full h-48 md:h-64">
           <img
-            src={vendor.bannerUrl}
+            src={vendor.coverUrl}
             alt={vendor.businessName}
             className="w-full h-full object-cover"
           />
@@ -108,10 +110,11 @@ export default function StorefrontClient({ vendor }: StorefrontClientProps) {
               <p className="text-gray-600 mb-3">{vendor.description}</p>
             )}
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-              {vendor.businessAddress && (
+              {/* FIXED: Changed businessAddress to address */}
+              {vendor.address && (
                 <div className="flex items-center gap-1">
                   <MapPin className="w-4 h-4" />
-                  <span>{vendor.businessAddress}</span>
+                  <span>{vendor.address}</span>
                 </div>
               )}
               {vendor.businessPhone && (
