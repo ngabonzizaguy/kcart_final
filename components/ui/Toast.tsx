@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment } from 'react'
+import { Fragment, useEffect, useCallback } from 'react'
 import { Transition } from '@headlessui/react'
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -24,12 +24,16 @@ export default function Toast({
   onClose,
   duration = 5000,
 }: ToastProps) {
-  // Auto-close toast after duration
-  if (show && duration > 0) {
-    setTimeout(() => {
-      onClose()
-    }, duration)
-  }
+  // ✅ FIXED: Moved setTimeout into useEffect
+  useEffect(() => {
+    if (show && duration > 0) {
+      const timer = setTimeout(() => {
+        onClose()
+      }, duration)
+
+      return () => clearTimeout(timer)
+    }
+  }, [show, duration, onClose])
 
   const icons = {
     success: CheckCircle,
@@ -99,13 +103,14 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined)
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toastProps, setToastProps] = useState<ToastProps | null>(null)
 
-  const showToast = (props: Omit<ToastProps, 'show' | 'onClose'>) => {
+  // ✅ FIXED: Wrapped showToast in useCallback to prevent recreating on every render
+  const showToast = useCallback((props: Omit<ToastProps, 'show' | 'onClose'>) => {
     setToastProps({
       ...props,
       show: true,
       onClose: () => setToastProps(null),
     })
-  }
+  }, [])
 
   return (
     <ToastContext.Provider value={{ showToast }}>
