@@ -57,6 +57,18 @@ export default async function StorefrontPage({ params }: StorefrontPageProps) {
           },
         },
       },
+      reviews: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+        select: {
+          id: true,
+          customerName: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+        },
+      },
     },
   })
 

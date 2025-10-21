@@ -12,7 +12,15 @@ interface OrderCardProps {
     deliveryType: 'delivery' | 'pickup'
     total: number
     status: 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled'
-    items: { quantity: number }[]
+    items: { 
+      quantity: number
+      menuItem?: {
+        id: string
+        name: string
+        nameRw: string | null
+        imageUrl: string | null
+      }
+    }[]
     createdAt: Date | string
   }
   onClick: () => void
@@ -82,6 +90,43 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
             {formatRelativeTime(order.createdAt)}
           </p>
         </div>
+
+        {/* Item Thumbnails */}
+        {order.items.length > 0 && (
+          <div className="flex -space-x-2 mb-3">
+            {order.items.slice(0, 3).map((item, index) => {
+              const menuItem = item.menuItem
+              if (!menuItem) return null
+              
+              if (menuItem.imageUrl) {
+                return (
+                  <img
+                    key={index}
+                    src={menuItem.imageUrl}
+                    alt={menuItem.name}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+                  />
+                )
+              } else {
+                // Fallback with first letter
+                const firstLetter = menuItem.name.charAt(0).toUpperCase()
+                return (
+                  <div
+                    key={index}
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white text-sm font-bold flex items-center justify-center border-2 border-white shadow-sm"
+                  >
+                    {firstLetter}
+                  </div>
+                )
+              }
+            })}
+            {order.items.length > 3 && (
+              <div className="w-10 h-10 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center border-2 border-white shadow-sm">
+                +{order.items.length - 3}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Divider */}
         <div className="border-t border-gray-200 my-3" />

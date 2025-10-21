@@ -75,6 +75,44 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
 
+    // Validate new fields if present
+    if (body.address !== undefined && body.address !== null) {
+      if (typeof body.address !== 'string' || body.address.length > 200) {
+        return NextResponse.json(
+          { error: 'Address must be a string with max 200 characters' },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (body.deliveryRange !== undefined) {
+      const range = Number(body.deliveryRange)
+      if (isNaN(range) || range < 2 || range > 20) {
+        return NextResponse.json(
+          { error: 'Delivery range must be between 2 and 20 km' },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (body.logoUrl !== undefined && body.logoUrl !== null) {
+      if (typeof body.logoUrl !== 'string') {
+        return NextResponse.json(
+          { error: 'Logo URL must be a valid string or null' },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (body.coverUrl !== undefined && body.coverUrl !== null) {
+      if (typeof body.coverUrl !== 'string') {
+        return NextResponse.json(
+          { error: 'Cover URL must be a valid string or null' },
+          { status: 400 }
+        )
+      }
+    }
+
     const updatedVendor = await prisma.vendor.update({
       where: { id: vendor.id },
       data: body,

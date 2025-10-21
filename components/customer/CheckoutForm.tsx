@@ -21,6 +21,7 @@ const checkoutFormSchema = z.object({
   deliveryType: z.enum(['delivery', 'pickup']),
   deliveryAddress: z.string().optional(),
   deliveryNotes: z.string().optional(),
+  paymentMethod: z.enum(['cash_on_delivery', 'mtn_mobile_money', 'airtel_mobile_money']),
 }).refine((data) => {
   // If delivery type is delivery, address is required
   if (data.deliveryType === 'delivery' && !data.deliveryAddress) {
@@ -72,6 +73,7 @@ export default function CheckoutForm({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
       deliveryType: 'delivery',
+      paymentMethod: 'cash_on_delivery',
     },
   })
 
@@ -114,6 +116,7 @@ export default function CheckoutForm({
         deliveryType: data.deliveryType,
         deliveryAddress: data.deliveryAddress || undefined,
         deliveryNotes: data.deliveryNotes || undefined,
+        paymentMethod: data.paymentMethod,
         items: cartItems.map((item) => ({
           menuItemId: item.menuItemId,
           name: item.name,
@@ -322,6 +325,63 @@ export default function CheckoutForm({
               <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t">
                 <span>Total:</span>
                 <span>{formatCurrency(total)}</span>
+              </div>
+            </div>
+
+            {/* Payment Method Selection */}
+            <div className="bg-white/95 backdrop-blur-lg border-2 border-orange-200 rounded-2xl p-4">
+              <h3 className="font-semibold text-gray-900 mb-3">Payment Method</h3>
+              <div className="space-y-2">
+                <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                  watch('paymentMethod') === 'cash_on_delivery' 
+                    ? 'border-orange-500 bg-orange-50' 
+                    : 'border-gray-200 bg-white hover:border-orange-300'
+                }`}>
+                  <input
+                    type="radio"
+                    value="cash_on_delivery"
+                    {...register('paymentMethod')}
+                    className="w-4 h-4 text-orange-500"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">💵 Cash on Delivery</div>
+                    <div className="text-xs text-gray-600">Pay when you receive your order</div>
+                  </div>
+                </label>
+
+                <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                  watch('paymentMethod') === 'mtn_mobile_money' 
+                    ? 'border-orange-500 bg-orange-50' 
+                    : 'border-gray-200 bg-white hover:border-orange-300'
+                }`}>
+                  <input
+                    type="radio"
+                    value="mtn_mobile_money"
+                    {...register('paymentMethod')}
+                    className="w-4 h-4 text-orange-500"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">📱 MTN Mobile Money</div>
+                    <div className="text-xs text-gray-600">You will receive payment instructions after order placement</div>
+                  </div>
+                </label>
+
+                <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                  watch('paymentMethod') === 'airtel_mobile_money' 
+                    ? 'border-orange-500 bg-orange-50' 
+                    : 'border-gray-200 bg-white hover:border-orange-300'
+                }`}>
+                  <input
+                    type="radio"
+                    value="airtel_mobile_money"
+                    {...register('paymentMethod')}
+                    className="w-4 h-4 text-orange-500"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">📱 Airtel Money</div>
+                    <div className="text-xs text-gray-600">You will receive payment instructions after order placement</div>
+                  </div>
+                </label>
               </div>
             </div>
 

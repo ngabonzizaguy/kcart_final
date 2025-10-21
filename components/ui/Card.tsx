@@ -32,7 +32,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         className={cn(
           'rounded-2xl transition-all duration-200',
           glass
-            ? 'bg-white/40 backdrop-blur-lg border border-white/20 shadow-glass'
+            ? 'bg-white/75 backdrop-blur-lg border border-white/20 shadow-glass'
             : 'bg-white border border-gray-200 shadow-md',
           hover && 'hover:shadow-glass-hover hover:scale-[1.01] cursor-pointer',
           paddingStyles[padding],

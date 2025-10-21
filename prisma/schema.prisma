@@ -57,6 +57,7 @@ model Vendor {
   categories        Category[]
   menuItems         MenuItem[]
   orders            Order[]
+  reviews           Review[]
 
   @@index([authId])
   @@index([slug])
@@ -142,6 +143,7 @@ model Order {
 
   // Status: new, preparing, ready, completed, cancelled
   status            String      @default("new")
+  paymentMethod     String?     // "cash_on_delivery", "mtn_mobile_money", "airtel_mobile_money"
 
   // Timestamps
   createdAt         DateTime    @default(now())
@@ -180,4 +182,26 @@ model OrderItem {
 
   @@index([orderId])
   @@index([menuItemId])
+}
+
+// Customer Reviews
+model Review {
+  id                String      @id @default(uuid())
+  
+  vendorId          String
+  vendor            Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  // Customer info
+  customerName      String      // Anonymous-friendly (no auth required)
+  
+  // Review content
+  rating            Int         // 1-5 stars
+  comment           String      // Review text
+  
+  // Timestamps
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@index([vendorId])
+  @@index([vendorId, createdAt])
 }

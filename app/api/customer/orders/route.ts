@@ -11,6 +11,7 @@ const createOrderSchema = z.object({
   deliveryType: z.enum(['delivery', 'pickup']),
   deliveryAddress: z.string().optional(),
   deliveryNotes: z.string().optional(),
+  paymentMethod: z.enum(['cash_on_delivery', 'mtn_mobile_money', 'airtel_mobile_money']).optional(),
   items: z.array(
     z.object({
       menuItemId: z.string().uuid(),
@@ -150,6 +151,7 @@ export async function POST(request: NextRequest) {
         deliveryType: data.deliveryType,
         deliveryAddress: data.deliveryAddress || null,
         deliveryNotes: data.deliveryNotes || null,
+        paymentMethod: data.paymentMethod || null,
         subtotal: data.subtotal,
         deliveryFee: data.deliveryFee,
         total: data.total,

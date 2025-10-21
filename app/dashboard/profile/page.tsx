@@ -245,6 +245,106 @@ export default function ProfilePage() {
       setIsSaving(false)
     }
   }
+  
+  const handleLogoUpload = async (url: string) => {
+    try {
+      const response = await fetch('/api/vendor/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logoUrl: url })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update logo')
+      }
+
+      setLogoUrl(url)
+      showToast({
+        type: 'success',
+        message: 'Logo updated successfully'
+      })
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        message: error.message || 'Failed to update logo'
+      })
+    }
+  }
+
+  const handleLogoRemove = async () => {
+    try {
+      const response = await fetch('/api/vendor/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logoUrl: null })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to remove logo')
+      }
+
+      setLogoUrl(null)
+      showToast({
+        type: 'success',
+        message: 'Logo removed'
+      })
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        message: error.message || 'Failed to remove logo'
+      })
+    }
+  }
+
+  const handleCoverUpload = async (url: string) => {
+    try {
+      const response = await fetch('/api/vendor/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverUrl: url })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update cover')
+      }
+
+      setCoverUrl(url)
+      showToast({
+        type: 'success',
+        message: 'Cover image updated successfully'
+      })
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        message: error.message || 'Failed to update cover'
+      })
+    }
+  }
+
+  const handleCoverRemove = async () => {
+    try {
+      const response = await fetch('/api/vendor/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverUrl: null })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to remove cover')
+      }
+
+      setCoverUrl(null)
+      showToast({
+        type: 'success',
+        message: 'Cover image removed'
+      })
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        message: error.message || 'Failed to remove cover'
+      })
+    }
+  }
 
   const updateDayHours = (day: string, field: keyof DayHours, value: string | boolean) => {
     setBusinessHours(prev => ({
