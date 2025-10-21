@@ -92,13 +92,6 @@ export default function BusinessInfoPage() {
           required
         />
 
-        <Input
-          label="Business Name (Kinyarwanda)"
-          placeholder="Optional"
-          {...register('businessNameRw')}
-          error={errors.businessNameRw?.message}
-        />
-
         <Select
           label="Business Type"
           options={businessTypes}
@@ -113,14 +106,6 @@ export default function BusinessInfoPage() {
           rows={4}
           {...register('description')}
           error={errors.description?.message}
-        />
-
-        <TextArea
-          label="Description (Kinyarwanda)"
-          placeholder="Optional"
-          rows={4}
-          {...register('descriptionRw')}
-          error={errors.descriptionRw?.message}
         />
 
         <div className="flex gap-3 pt-4">
