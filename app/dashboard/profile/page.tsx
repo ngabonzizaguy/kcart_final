@@ -6,6 +6,7 @@ import Switch from '@/components/ui/Switch'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import QRCode from '@/components/ui/QRCode'
+import ImageUpload from '@/components/ui/ImageUpload'
 import { useToast } from '@/components/ui/Toast'
 import { Download, Share2 } from 'lucide-react'
 
@@ -27,6 +28,10 @@ interface Vendor {
   businessPhone: string
   whatsappNumber: string | null
   description: string | null
+  logoUrl: string | null
+  coverUrl: string | null
+  address: string | null
+  deliveryRange: number
   isOnline: boolean
   businessHours: BusinessHours | null
   slug: string
@@ -66,6 +71,10 @@ export default function ProfilePage() {
   const [businessPhone, setBusinessPhone] = useState('')
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [description, setDescription] = useState('')
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [address, setAddress] = useState('')
+  const [deliveryRange, setDeliveryRange] = useState(5)
   const [isOnline, setIsOnline] = useState(true)
   const [businessHours, setBusinessHours] = useState<BusinessHours>(defaultBusinessHours)
 
@@ -92,6 +101,10 @@ export default function ProfilePage() {
       setBusinessPhone(vendorData.businessPhone || '')
       setWhatsappNumber(vendorData.whatsappNumber || '')
       setDescription(vendorData.description || '')
+      setLogoUrl(vendorData.logoUrl || null)
+      setCoverUrl(vendorData.coverUrl || null)
+      setAddress(vendorData.address || '')
+      setDeliveryRange(vendorData.deliveryRange || 5)
       setIsOnline(vendorData.isOnline ?? true)
       setBusinessHours(vendorData.businessHours || defaultBusinessHours)
     } catch (error: any) {
@@ -127,6 +140,10 @@ export default function ProfilePage() {
 
     if (description && description.length > 500) {
       newErrors.description = 'Description cannot exceed 500 characters'
+    }
+
+    if (address && address.length > 200) {
+      newErrors.address = 'Address cannot exceed 200 characters'
     }
 
     setErrors(newErrors)
@@ -191,7 +208,9 @@ export default function ProfilePage() {
           businessName: businessName.trim(),
           businessPhone: businessPhone.trim(),
           whatsappNumber: whatsappNumber.trim() || null,
-          description: description.trim() || null
+          description: description.trim() || null,
+          address: address.trim() || null,
+          deliveryRange: deliveryRange
         })
       })
 
@@ -245,7 +264,7 @@ export default function ProfilePage() {
       setIsSaving(false)
     }
   }
-  
+
   const handleLogoUpload = async (url: string) => {
     try {
       const response = await fetch('/api/vendor/profile', {
@@ -255,19 +274,20 @@ export default function ProfilePage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update logo')
+        throw new Error('Failed to save logo')
       }
 
       setLogoUrl(url)
       showToast({
         type: 'success',
-        message: 'Logo updated successfully'
+        message: 'Logo uploaded successfully'
       })
     } catch (error: any) {
       showToast({
         type: 'error',
-        message: error.message || 'Failed to update logo'
+        message: error.message || 'Failed to save logo'
       })
+      throw error
     }
   }
 
@@ -293,6 +313,7 @@ export default function ProfilePage() {
         type: 'error',
         message: error.message || 'Failed to remove logo'
       })
+      throw error
     }
   }
 
@@ -305,19 +326,20 @@ export default function ProfilePage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update cover')
+        throw new Error('Failed to save cover image')
       }
 
       setCoverUrl(url)
       showToast({
         type: 'success',
-        message: 'Cover image updated successfully'
+        message: 'Cover image uploaded successfully'
       })
     } catch (error: any) {
       showToast({
         type: 'error',
-        message: error.message || 'Failed to update cover'
+        message: error.message || 'Failed to save cover image'
       })
+      throw error
     }
   }
 
@@ -330,7 +352,7 @@ export default function ProfilePage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to remove cover')
+        throw new Error('Failed to remove cover image')
       }
 
       setCoverUrl(null)
@@ -341,8 +363,9 @@ export default function ProfilePage() {
     } catch (error: any) {
       showToast({
         type: 'error',
-        message: error.message || 'Failed to remove cover'
+        message: error.message || 'Failed to remove cover image'
       })
+      throw error
     }
   }
 
@@ -410,7 +433,7 @@ export default function ProfilePage() {
     URL.revokeObjectURL(url)
   }
 
-  const handleShare = (platform: 'whatsapp' | 'facebook' | 'twitter') => {
+  const handleShare = (platform: 'whatsapp' | 'instagram' | 'tiktok') => {
     if (!vendor) return
 
     const storefrontUrl = `${window.location.origin}/${vendor.slug}`
@@ -420,11 +443,11 @@ export default function ProfilePage() {
       case 'whatsapp':
         shareUrl = `https://wa.me/?text=${encodeURIComponent('Check out my menu: ' + storefrontUrl)}`
         break
-      case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(storefrontUrl)}`
+      case 'instagram':
+        shareUrl = 'https://www.instagram.com/'
         break
-      case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(storefrontUrl)}&text=${encodeURIComponent('Check out my menu!')}`
+      case 'tiktok':
+        shareUrl = 'https://www.tiktok.com/'
         break
     }
 
@@ -520,6 +543,26 @@ export default function ProfilePage() {
           {/* Business Info Tab */}
           {selectedTab === 'info' && (
             <div className="space-y-6">
+              <ImageUpload
+                label="Business Logo"
+                folder="logos"
+                currentImage={logoUrl}
+                aspectRatio="square"
+                maxSizeMB={2}
+                onUploadComplete={handleLogoUpload}
+                onRemove={handleLogoRemove}
+              />
+
+              <ImageUpload
+                label="Cover Image"
+                folder="covers"
+                currentImage={coverUrl}
+                aspectRatio="cover"
+                maxSizeMB={5}
+                onUploadComplete={handleCoverUpload}
+                onRemove={handleCoverRemove}
+              />
+
               <Input
                 label="Business Name"
                 value={businessName}
@@ -560,6 +603,48 @@ export default function ProfilePage() {
                 error={errors.whatsappNumber}
                 helperText="Optional - if different from business phone"
               />
+
+              <Input
+                label="Business Address"
+                type="text"
+                value={address}
+                onChange={e => {
+                  setAddress(e.target.value)
+                  if (errors.address) {
+                    setErrors(prev => ({ ...prev, address: '' }))
+                  }
+                }}
+                error={errors.address}
+                placeholder="e.g., KG 123 St, Kigali"
+                helperText="Your business location for customer reference"
+              />
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-3">
+                  Delivery Range: <span className="text-primary-600 font-bold text-lg">{deliveryRange} km</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="range"
+                    min="2"
+                    max="20"
+                    step="1"
+                    value={deliveryRange}
+                    onChange={e => setDeliveryRange(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                    style={{
+                      background: `linear-gradient(to right, #fb923c 0%, #f97316 ${((deliveryRange - 2) / 18) * 100}%, #e5e7eb ${((deliveryRange - 2) / 18) * 100}%, #e5e7eb 100%)`
+                    }}
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>2km</span>
+                    <span>5km</span>
+                    <span>10km</span>
+                    <span>15km</span>
+                    <span>20km</span>
+                  </div>
+                </div>
+              </div>
 
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
@@ -716,18 +801,18 @@ export default function ProfilePage() {
                     WhatsApp
                   </button>
                   <button
-                    onClick={() => handleShare('facebook')}
-                    className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#1877f2] text-white font-medium hover:bg-[#166fe5] transition-colors"
+                    onClick={() => handleShare('instagram')}
+                    className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#E4405F] text-white font-medium hover:bg-[#d12d4a] transition-colors"
                   >
                     <Share2 className="h-4 w-4" />
-                    Facebook
+                    Instagram
                   </button>
                   <button
-                    onClick={() => handleShare('twitter')}
-                    className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#1da1f2] text-white font-medium hover:bg-[#1a8cd8] transition-colors"
+                    onClick={() => handleShare('tiktok')}
+                    className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#000000] text-white font-medium hover:bg-[#2d2d2d] transition-colors"
                   >
                     <Share2 className="h-4 w-4" />
-                    Twitter
+                    TikTok
                   </button>
                 </div>
               </div>
