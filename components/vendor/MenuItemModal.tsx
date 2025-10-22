@@ -44,9 +44,7 @@ export default function MenuItemModal({
   onDelete,
 }: MenuItemModalProps) {
   const [name, setName] = useState('')
-  const [nameRw, setNameRw] = useState('')
   const [description, setDescription] = useState('')
-  const [descriptionRw, setDescriptionRw] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [price, setPrice] = useState('')
   const [imageUrl, setImageUrl] = useState<string | null>(null)
@@ -61,9 +59,7 @@ export default function MenuItemModal({
       if (item) {
         // Edit mode - pre-fill form
         setName(item.name || '')
-        setNameRw(item.nameRw || '')
         setDescription(item.description || '')
-        setDescriptionRw(item.descriptionRw || '')
         setCategoryId(item.categoryId || '')
         setPrice(item.price.toString())
         setImageUrl(item.imageUrl || null)
@@ -71,9 +67,7 @@ export default function MenuItemModal({
       } else {
         // Create mode - clear form
         setName('')
-        setNameRw('')
         setDescription('')
-        setDescriptionRw('')
         setCategoryId(categories.length > 0 ? categories[0].id : '')
         setPrice('')
         setImageUrl(null)
@@ -111,9 +105,7 @@ export default function MenuItemModal({
     try {
       await onSave({
         name: trimmedName,
-        nameRw: nameRw.trim() || undefined,
         description: description.trim() || undefined,
-        descriptionRw: descriptionRw.trim() || undefined,
         categoryId,
         price: priceNum,
         imageUrl: imageUrl || undefined,
@@ -162,7 +154,7 @@ export default function MenuItemModal({
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Item Name (English)"
+            label="Item Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Grilled Chicken"
@@ -170,28 +162,11 @@ export default function MenuItemModal({
             disabled={loading}
           />
 
-          <Input
-            label="Item Name (Kinyarwanda)"
-            value={nameRw}
-            onChange={(e) => setNameRw(e.target.value)}
-            placeholder="e.g., Inkoko igitsuwe"
-            disabled={loading}
-          />
-
           <TextArea
-            label="Description (English)"
+            label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Optional description"
-            rows={3}
-            disabled={loading}
-          />
-
-          <TextArea
-            label="Description (Kinyarwanda)"
-            value={descriptionRw}
-            onChange={(e) => setDescriptionRw(e.target.value)}
-            placeholder="Ibisobanuro (optional)"
             rows={3}
             disabled={loading}
           />

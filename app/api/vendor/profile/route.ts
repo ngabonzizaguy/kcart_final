@@ -113,6 +113,34 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    if (body.acceptedPaymentMethods !== undefined) {
+      if (!Array.isArray(body.acceptedPaymentMethods)) {
+        return NextResponse.json(
+          { error: 'Accepted payment methods must be an array' },
+          { status: 400 }
+        )
+      }
+      
+      const validMethods = ['cash_on_delivery', 'mtn_mobile_money', 'airtel_mobile_money']
+      const allValid = body.acceptedPaymentMethods.every((method: string) => 
+        validMethods.includes(method)
+      )
+      
+      if (!allValid) {
+        return NextResponse.json(
+          { error: 'Invalid payment method. Allowed: cash_on_delivery, mtn_mobile_money, airtel_mobile_money' },
+          { status: 400 }
+        )
+      }
+
+      if (body.acceptedPaymentMethods.length === 0) {
+        return NextResponse.json(
+          { error: 'At least one payment method must be selected' },
+          { status: 400 }
+        )
+      }
+    }
+
     const updatedVendor = await prisma.vendor.update({
       where: { id: vendor.id },
       data: body,

@@ -41,6 +41,7 @@ model Vendor {
   // Contact
   businessPhone     String
   whatsappNumber    String?
+  acceptedPaymentMethods String[] @default(["cash_on_delivery"]) // Payment methods: cash_on_delivery, mtn_mobile_money, airtel_mobile_money
 
   // Business Hours (JSON: {mon: {open: "08:00", close: "20:00", closed: false}, ...})
   businessHours     Json?

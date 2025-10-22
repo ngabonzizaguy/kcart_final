@@ -28,9 +28,7 @@ export default function CategoryModal({
   onSave,
 }: CategoryModalProps) {
   const [name, setName] = useState('')
-  const [nameRw, setNameRw] = useState('')
   const [description, setDescription] = useState('')
-  const [descriptionRw, setDescriptionRw] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -40,15 +38,11 @@ export default function CategoryModal({
       if (category) {
         // Edit mode - pre-fill form
         setName(category.name || '')
-        setNameRw(category.nameRw || '')
         setDescription(category.description || '')
-        setDescriptionRw(category.descriptionRw || '')
       } else {
         // Create mode - clear form
         setName('')
-        setNameRw('')
         setDescription('')
-        setDescriptionRw('')
       }
       setError('')
     }
@@ -70,9 +64,7 @@ export default function CategoryModal({
     try {
       await onSave({
         name: trimmedName,
-        nameRw: nameRw.trim() || undefined,
         description: description.trim() || undefined,
-        descriptionRw: descriptionRw.trim() || undefined,
       })
       onClose()
     } catch (err: any) {
@@ -97,7 +89,7 @@ export default function CategoryModal({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="Category Name (English)"
+          label="Category Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g., Main Dishes"
@@ -105,28 +97,11 @@ export default function CategoryModal({
           disabled={loading}
         />
 
-        <Input
-          label="Category Name (Kinyarwanda)"
-          value={nameRw}
-          onChange={(e) => setNameRw(e.target.value)}
-          placeholder="e.g., Ibiryo by'ingenzi"
-          disabled={loading}
-        />
-
         <TextArea
-          label="Description (English)"
+          label="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Optional description"
-          rows={3}
-          disabled={loading}
-        />
-
-        <TextArea
-          label="Description (Kinyarwanda)"
-          value={descriptionRw}
-          onChange={(e) => setDescriptionRw(e.target.value)}
-          placeholder="Ibisobanuro (optional)"
           rows={3}
           disabled={loading}
         />
