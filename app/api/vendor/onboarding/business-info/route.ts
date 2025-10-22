@@ -30,6 +30,28 @@ export async function POST(request: NextRequest) {
 
     const validatedData = validation.data
 
+    // Validate cuisineTags if provided
+    if (body.cuisineTags) {
+      if (!Array.isArray(body.cuisineTags)) {
+        return NextResponse.json(
+          { error: 'cuisineTags must be an array' },
+          { status: 400 }
+        )
+      }
+      if (body.cuisineTags.length > 5) {
+        return NextResponse.json(
+          { error: 'Maximum 5 cuisine tags allowed' },
+          { status: 400 }
+        )
+      }
+      if (body.cuisineTags.some((tag: string) => tag.length > 30)) {
+        return NextResponse.json(
+          { error: 'Each tag must be 30 characters or less' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Check if vendor already exists
     let vendor = await prisma.vendor.findUnique({
       where: { authId: user.id },
@@ -61,6 +83,7 @@ export async function POST(request: NextRequest) {
           description: validatedData.description,
           descriptionRw: validatedData.descriptionRw,
           slug,
+          cuisineTags: body.cuisineTags || [],
         },
       })
     } else {
@@ -77,6 +100,7 @@ export async function POST(request: NextRequest) {
           slug,
           businessPhone: '', // Will be set in later onboarding step
           isSetupComplete: false,
+          cuisineTags: body.cuisineTags || [],
         },
       })
     }

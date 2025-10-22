@@ -141,6 +141,27 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    if (body.cuisineTags !== undefined) {
+      if (!Array.isArray(body.cuisineTags)) {
+        return NextResponse.json(
+          { error: 'Cuisine tags must be an array' },
+          { status: 400 }
+        )
+      }
+      if (body.cuisineTags.length > 5) {
+        return NextResponse.json(
+          { error: 'Maximum 5 cuisine tags allowed' },
+          { status: 400 }
+        )
+      }
+      if (body.cuisineTags.some((tag: string) => typeof tag !== 'string' || tag.length > 30)) {
+        return NextResponse.json(
+          { error: 'Each cuisine tag must be a string with max 30 characters' },
+          { status: 400 }
+        )
+      }
+    }
+
     const updatedVendor = await prisma.vendor.update({
       where: { id: vendor.id },
       data: body,
