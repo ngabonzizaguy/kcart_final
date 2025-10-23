@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import Card, { CardContent } from '@/components/ui/Card'
 import { BarChart3 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
@@ -268,12 +269,32 @@ export default function AnalyticsPage() {
                           key={item.id}
                           className="bg-white/80 backdrop-blur-lg border border-white/20 rounded-xl p-4 hover:shadow-md transition-shadow"
                         >
-                          <div className="flex items-start justify-between mb-2">
+                          {/* Rank Badge */}
+                          <div className="flex items-start justify-between mb-3">
                             <span className="text-2xl font-bold text-primary-500">
                               #{index + 1}
                             </span>
                           </div>
-                          <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 min-h-[2.5rem]">
+                          
+                          {/* Item Thumbnail */}
+                          <div className="mb-3 relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100">
+                            {item.imageUrl ? (
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.name}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 100vw, 20vw"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
+                                <span className="text-4xl">🍽️</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Item Details */}
+                          <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 min-h-[2.5rem] text-sm">
                             {item.name}
                           </h3>
                           <p className="text-sm text-gray-600 mb-1">
