@@ -48,6 +48,7 @@ interface Vendor {
   businessPhone: string | null
   isOnline: boolean
   deliveryFee: number
+  cuisineTags: string[]
   categories: Category[]
   reviews: Review[]
 }
@@ -256,17 +257,19 @@ export default function StorefrontClient({ vendor }: StorefrontClientProps) {
             )}
           </div>
 
-          {/* Category Tags */}
-          <div className="flex flex-wrap gap-2 mb-3">
-            {vendor.categories.slice(0, 3).map((category) => (
-              <span
-                key={category.id}
-                className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full"
-              >
-                {category.name}
-              </span>
-            ))}
-          </div>
+          {/* Cuisine Tags */}
+          {vendor.cuisineTags && vendor.cuisineTags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {vendor.cuisineTags.slice(0, 3).map((tag, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Description */}
           {vendor.description && (

@@ -39,6 +39,7 @@ interface CheckoutFormProps {
   vendorId: string
   vendorSlug: string
   deliveryFee: number
+  acceptedPaymentMethods: string[]
   cartItems: Array<{
     menuItemId: string
     name: string
@@ -54,6 +55,7 @@ export default function CheckoutForm({
   vendorId,
   vendorSlug,
   deliveryFee,
+  acceptedPaymentMethods,
   cartItems,
   subtotal,
 }: CheckoutFormProps) {
@@ -73,7 +75,7 @@ export default function CheckoutForm({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
       deliveryType: 'delivery',
-      paymentMethod: 'cash_on_delivery',
+      paymentMethod: acceptedPaymentMethods[0] as any,
     },
   })
 
@@ -331,58 +333,71 @@ export default function CheckoutForm({
             {/* Payment Method Selection */}
             <div className="bg-white/95 backdrop-blur-lg border-2 border-orange-200 rounded-2xl p-4">
               <h3 className="font-semibold text-gray-900 mb-3">Payment Method</h3>
-              <div className="space-y-2">
-                <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                  watch('paymentMethod') === 'cash_on_delivery' 
-                    ? 'border-orange-500 bg-orange-50' 
-                    : 'border-gray-200 bg-white hover:border-orange-300'
-                }`}>
-                  <input
-                    type="radio"
-                    value="cash_on_delivery"
-                    {...register('paymentMethod')}
-                    className="w-4 h-4 text-orange-500"
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">💵 Cash on Delivery</div>
-                    <div className="text-xs text-gray-600">Pay when you receive your order</div>
-                  </div>
-                </label>
+              
+              {(() => {
+                const paymentMethodConfig = [
+                  {
+                    value: 'cash_on_delivery',
+                    emoji: '💵',
+                    label: 'Cash on Delivery',
+                    description: 'Pay when you receive your order'
+                  },
+                  {
+                    value: 'mtn_mobile_money',
+                    emoji: '📱',
+                    label: 'MTN Mobile Money',
+                    description: 'You will receive payment instructions after order placement'
+                  },
+                  {
+                    value: 'airtel_mobile_money',
+                    emoji: '📱',
+                    label: 'Airtel Money',
+                    description: 'You will receive payment instructions after order placement'
+                  }
+                ]
 
-                <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                  watch('paymentMethod') === 'mtn_mobile_money' 
-                    ? 'border-orange-500 bg-orange-50' 
-                    : 'border-gray-200 bg-white hover:border-orange-300'
-                }`}>
-                  <input
-                    type="radio"
-                    value="mtn_mobile_money"
-                    {...register('paymentMethod')}
-                    className="w-4 h-4 text-orange-500"
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">📱 MTN Mobile Money</div>
-                    <div className="text-xs text-gray-600">You will receive payment instructions after order placement</div>
-                  </div>
-                </label>
+                const availablePaymentMethods = paymentMethodConfig.filter(pm => 
+                  acceptedPaymentMethods.includes(pm.value)
+                )
 
-                <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                  watch('paymentMethod') === 'airtel_mobile_money' 
-                    ? 'border-orange-500 bg-orange-50' 
-                    : 'border-gray-200 bg-white hover:border-orange-300'
-                }`}>
-                  <input
-                    type="radio"
-                    value="airtel_mobile_money"
-                    {...register('paymentMethod')}
-                    className="w-4 h-4 text-orange-500"
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">📱 Airtel Money</div>
-                    <div className="text-xs text-gray-600">You will receive payment instructions after order placement</div>
+                if (availablePaymentMethods.length === 0) {
+                  return (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-center">
+                      <p className="text-sm text-red-800">No payment methods available. Please contact the vendor.</p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="space-y-2">
+                    {availablePaymentMethods.map((method) => (
+                      <label 
+                        key={method.value}
+                        className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                          watch('paymentMethod') === method.value
+                            ? 'border-orange-500 bg-orange-50' 
+                            : 'border-gray-200 bg-white hover:border-orange-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          value={method.value}
+                          {...register('paymentMethod')}
+                          className="w-4 h-4 text-orange-500"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">
+                            {method.emoji} {method.label}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {method.description}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
                   </div>
-                </label>
-              </div>
+                )
+              })()}
             </div>
 
             {/* Customer Info */}
