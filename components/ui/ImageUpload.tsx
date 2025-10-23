@@ -29,9 +29,9 @@ export default function ImageUpload({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const aspectRatioClasses = {
-    square: 'aspect-square',
-    video: 'aspect-video',
-    cover: 'aspect-[16/9]',
+    square: 'aspect-square max-w-[120px]',
+    video: 'aspect-video max-w-[300px]',
+    cover: 'aspect-[2/1] max-w-[300px]',
   }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +111,7 @@ export default function ImageUpload({
 
       <div className="relative">
         {preview ? (
-          <div className={`relative w-full ${aspectRatioClasses[aspectRatio]} rounded-xl overflow-hidden bg-gray-100`}>
+          <div className={`relative w-full ${aspectRatioClasses[aspectRatio]} rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 border-2 border-orange-200 shadow-sm`}>
             <img
               src={preview}
               alt="Upload preview"
@@ -129,7 +129,7 @@ export default function ImageUpload({
             )}
 
             {uploading && (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm">
                 <Loader2 className="w-8 h-8 text-white animate-spin" />
               </div>
             )}
@@ -141,20 +141,21 @@ export default function ImageUpload({
             disabled={uploading}
             className={`
               w-full ${aspectRatioClasses[aspectRatio]}
-              border-2 border-dashed border-gray-300 rounded-xl
+              border-2 border-dashed border-orange-300 rounded-xl
+              bg-gradient-to-br from-amber-50 to-orange-50
               flex flex-col items-center justify-center gap-2
-              hover:border-primary-500 hover:bg-primary-50
-              transition-colors cursor-pointer
+              hover:border-orange-400 hover:from-amber-100 hover:to-orange-100
+              transition-all cursor-pointer shadow-sm
               disabled:opacity-50 disabled:cursor-not-allowed
             `}
           >
             {uploading ? (
-              <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+              <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
             ) : (
               <>
-                <Upload className="w-8 h-8 text-gray-400" />
-                <span className="text-sm text-gray-600">Click to upload</span>
-                <span className="text-xs text-gray-500">
+                <Upload className="w-8 h-8 text-orange-400" />
+                <span className="text-sm text-gray-700 font-medium">Click to upload</span>
+                <span className="text-xs text-gray-600">
                   JPG, PNG, or WebP (max {maxSizeMB}MB)
                 </span>
               </>

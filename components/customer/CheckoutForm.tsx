@@ -143,13 +143,13 @@ export default function CheckoutForm({
 
       const { order } = await response.json()
 
-      // Clear cart and navigate to order tracking
+      // Clear cart and navigate to storefront with success banner
       clearCart()
       showToast({
         type: 'success',
         message: 'Order placed successfully!',
       })
-      router.push(`/${vendorSlug}/orders/${order.orderNumber}`)
+      router.push(`/${vendorSlug}?orderPlaced=true&orderNumber=${order.orderNumber}`)
     } catch (error: any) {
       showToast({
         type: 'error',

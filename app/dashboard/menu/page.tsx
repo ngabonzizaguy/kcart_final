@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import MenuItemCard from '@/components/vendor/MenuItemCard'
 import MenuItemModal from '@/components/vendor/MenuItemModal'
 import CategoryModal from '@/components/vendor/CategoryModal'
+import { createClient } from '@/lib/supabase/client'
 
 interface Category {
   id: string
@@ -42,6 +43,7 @@ export default function MenuPage() {
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
   const [isLoading, setIsLoading] = useState(true)
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [vendorId, setVendorId] = useState<string | null>(null)
 
   // Category modal state
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
@@ -59,6 +61,85 @@ export default function MenuPage() {
     fetchCategories()
     fetchMenuItems()
   }, [])
+
+  // Set up realtime subscriptions for vendor menu sync
+  useEffect(() => {
+    if (!vendorId) return
+
+    const supabase = createClient()
+
+    const channel = supabase
+      .channel('vendor-menu-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'MenuItem',
+          filter: `vendorId=eq.${vendorId}`
+        },
+        async (payload: any) => {
+          // Fetch fresh data to get complete item with category
+          await fetchMenuItems()
+          setToastMessage({
+            type: 'success',
+            message: 'New menu item added (synced from another tab)'
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'MenuItem',
+          filter: `vendorId=eq.${vendorId}`
+        },
+        (payload: any) => {
+          const updatedItem = payload.new
+          
+          // Update menu items with realtime data
+          setMenuItems((prev) => {
+            const existing = prev.find(item => item.id === updatedItem.id)
+            if (existing) {
+              // Check if this is different from our optimistic update
+              return prev.map((item) =>
+                item.id === updatedItem.id 
+                  ? { ...item, ...updatedItem, category: item.category } 
+                  : item
+              )
+            }
+            return prev
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'MenuItem',
+          filter: `vendorId=eq.${vendorId}`
+        },
+        (payload: any) => {
+          const deletedItemId = payload.old.id
+          
+          // Remove item from list
+          setMenuItems((prev) => prev.filter(item => item.id !== deletedItemId))
+          
+          setToastMessage({
+            type: 'success',
+            message: 'Menu item deleted (synced from another tab)'
+          })
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscriptions
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [vendorId])
 
   // Auto-hide toast after 5 seconds
   useEffect(() => {
@@ -102,6 +183,11 @@ export default function MenuPage() {
       }
       const data = await response.json()
       setMenuItems(data.menuItems)
+      
+      // Extract vendor ID for realtime subscriptions
+      if (data.menuItems.length > 0 && !vendorId) {
+        setVendorId(data.menuItems[0].vendorId || data.vendorId)
+      }
     } catch (error) {
       console.error('Fetch menu items error:', error)
       setToastMessage({ type: 'error', message: 'Failed to load menu items' })

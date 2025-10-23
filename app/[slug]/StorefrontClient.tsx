@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/store/cartStore'
 import { formatCurrency } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import CartDrawer from '@/components/customer/CartDrawer'
-import { ShoppingCart, MapPin, Clock, Phone, Star } from 'lucide-react'
+import { ShoppingCart, MapPin, Clock, Phone, Star, AlertCircle, CheckCircle, X, ExternalLink } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface MenuItem {
   id: string
@@ -87,9 +89,21 @@ const getCategoryEmoji = (categoryName: string): string => {
   return '🍽️' // default
 }
 
-export default function StorefrontClient({ vendor }: StorefrontClientProps) {
-  const { itemCount, addItem, openDrawer } = useCartStore()
+export default function StorefrontClient({ vendor: initialVendor }: StorefrontClientProps) {
+  const { itemCount, addItem, openDrawer, items: cartItems } = useCartStore()
   const count = itemCount()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  
+  // State management for realtime updates
+  const [vendor, setVendor] = useState<Vendor>(initialVendor)
+  const [categories, setCategories] = useState<Category[]>(initialVendor.categories)
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'warning' | 'info'; message: string } | null>(null)
+  
+  // Success banner state
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false)
+  const [orderNumber, setOrderNumber] = useState<string | null>(null)
+  
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     vendor.categories.length > 0 ? vendor.categories[0].id : null
   )
@@ -101,6 +115,179 @@ export default function StorefrontClient({ vendor }: StorefrontClientProps) {
   const [reviewErrors, setReviewErrors] = useState<{ [key: string]: string }>({})
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewSuccess, setReviewSuccess] = useState(false)
+
+  // Check for order success query parameters
+  useEffect(() => {
+    const orderPlaced = searchParams.get('orderPlaced')
+    const orderNum = searchParams.get('orderNumber')
+    
+    if (orderPlaced === 'true' && orderNum) {
+      setShowSuccessBanner(true)
+      setOrderNumber(orderNum)
+      
+      // Auto-dismiss after 10 seconds
+      const timer = setTimeout(() => {
+        handleDismissBanner()
+      }, 10000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams])
+
+  const handleDismissBanner = () => {
+    setShowSuccessBanner(false)
+    // Remove query parameters from URL
+    router.replace(`/${vendor.slug}`)
+  }
+
+  // Set up realtime subscriptions
+  useEffect(() => {
+    const supabase = createClient()
+
+    // Menu items realtime subscription
+    const menuChannel = supabase
+      .channel('menu-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'MenuItem',
+          filter: `vendorId=eq.${vendor.id}`
+        },
+        (payload: any) => {
+          const updatedItem = payload.new
+          
+          // Update categories state with the changed item
+          setCategories(prevCategories => 
+            prevCategories.map(category => ({
+              ...category,
+              menuItems: category.menuItems.map(item => 
+                item.id === updatedItem.id 
+                  ? { ...item, ...updatedItem }
+                  : item
+              )
+            }))
+          )
+          
+          // Check if item is in cart
+          const itemInCart = cartItems.find(cartItem => cartItem.menuItemId === updatedItem.id)
+          
+          // Show appropriate toast notifications
+          if (updatedItem.isAvailable === false && itemInCart) {
+            setToastMessage({
+              type: 'warning',
+              message: `⚠️ ${updatedItem.name} is no longer available. Please remove it from your cart.`
+            })
+          } else if (updatedItem.isAvailable === true && itemInCart) {
+            setToastMessage({
+              type: 'info',
+              message: `📝 ${updatedItem.name} details have been updated`
+            })
+          } else if (updatedItem.isAvailable === false) {
+            setToastMessage({
+              type: 'warning',
+              message: `${updatedItem.name} is now unavailable`
+            })
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'MenuItem',
+          filter: `vendorId=eq.${vendor.id}`
+        },
+        (payload: any) => {
+          const deletedItemId = payload.old.id
+          
+          // Remove item from categories
+          setCategories(prevCategories => 
+            prevCategories.map(category => ({
+              ...category,
+              menuItems: category.menuItems.filter(item => item.id !== deletedItemId)
+            }))
+          )
+          
+          // Check if item was in cart
+          const itemInCart = cartItems.find(cartItem => cartItem.menuItemId === deletedItemId)
+          if (itemInCart) {
+            setToastMessage({
+              type: 'warning',
+              message: `⚠️ ${itemInCart.name} has been removed from the menu. Please remove it from your cart.`
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    // Business info realtime subscription
+    const vendorChannel = supabase
+      .channel('business-info-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'Vendor',
+          filter: `id=eq.${vendor.id}`
+        },
+        (payload: any) => {
+          const updatedVendor = payload.new
+          
+          // Update vendor state
+          setVendor(prev => ({ ...prev, ...updatedVendor }))
+          
+          // Show appropriate notifications
+          if (updatedVendor.businessName !== vendor.businessName) {
+            setToastMessage({
+              type: 'info',
+              message: `Store name updated to ${updatedVendor.businessName}`
+            })
+          }
+          
+          if (updatedVendor.isOnline !== vendor.isOnline) {
+            if (updatedVendor.isOnline) {
+              setToastMessage({
+                type: 'success',
+                message: '🟢 Store is back online!'
+              })
+            } else {
+              setToastMessage({
+                type: 'warning',
+                message: '🔴 This store is now offline'
+              })
+            }
+          }
+          
+          if (updatedVendor.deliveryFee !== vendor.deliveryFee) {
+            setToastMessage({
+              type: 'info',
+              message: `Delivery fee updated to ${formatCurrency(updatedVendor.deliveryFee)}`
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscriptions
+    return () => {
+      supabase.removeChannel(menuChannel)
+      supabase.removeChannel(vendorChannel)
+    }
+  }, [vendor.id, cartItems])
+
+  // Auto-hide toast after 5 seconds
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => {
+        setToastMessage(null)
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [toastMessage])
 
   const handleAddToCart = (item: MenuItem) => {
     addItem(
@@ -119,7 +306,7 @@ export default function StorefrontClient({ vendor }: StorefrontClientProps) {
   }
 
   // Get currently selected category
-  const selectedCategoryData = vendor.categories.find(cat => cat.id === selectedCategory)
+  const selectedCategoryData = categories.find(cat => cat.id === selectedCategory)
 
   // Calculate average rating
   const averageRating = vendor.reviews.length > 0
@@ -197,6 +384,39 @@ export default function StorefrontClient({ vendor }: StorefrontClientProps) {
 
   return (
     <div className="min-h-screen bg-[#f5f1e8] pb-24">
+      {/* Success Banner */}
+      {showSuccessBanner && orderNumber && (
+        <div className="sticky top-0 z-50 bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-500 backdrop-blur-md">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-green-900 font-semibold text-sm md:text-base">
+                  🎉 Your order has been placed successfully! We'll notify you once it's ready.
+                </p>
+                <p className="text-green-700 text-sm mt-1">
+                  Order #{orderNumber}
+                </p>
+                <a
+                  href={`/${vendor.slug}/orders/${orderNumber}`}
+                  className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-green-700 hover:text-green-800 underline"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Track your order
+                </a>
+              </div>
+              <button
+                onClick={handleDismissBanner}
+                className="flex-shrink-0 p-1.5 rounded-lg hover:bg-green-100 transition-colors"
+                aria-label="Dismiss"
+              >
+                <X className="w-5 h-5 text-green-700" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cover Image with Open Badge */}
       <div className="relative w-full h-64 md:h-80 bg-gradient-to-br from-amber-100 to-orange-100">
         {vendor.coverUrl ? (
@@ -289,10 +509,13 @@ export default function StorefrontClient({ vendor }: StorefrontClientProps) {
 
         {/* Offline Banner */}
         {!vendor.isOnline && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-5 rounded-lg">
-            <p className="text-yellow-700 font-medium text-sm">
-              This restaurant is currently closed and not accepting orders.
-            </p>
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-5 rounded-lg sticky top-0 z-10">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+              <p className="text-red-700 font-semibold text-sm">
+                🔴 Store is currently offline - Orders cannot be placed at this time
+              </p>
+            </div>
           </div>
         )}
 
@@ -342,54 +565,73 @@ export default function StorefrontClient({ vendor }: StorefrontClientProps) {
 
             {/* Menu Items */}
             <div className="space-y-3">
-              {selectedCategoryData.menuItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-                >
-                  <div className="flex gap-3 p-3">
-                    {/* Item Image */}
-                    <div className="flex-shrink-0">
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover"
-                        />
-                      ) : (
-                        <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl bg-gradient-to-br from-orange-200 to-orange-300 flex items-center justify-center text-2xl">
-                          🍽️
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Item Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-bold text-gray-900 mb-0.5">
-                        {item.name}
-                      </h3>
-                      {item.description && (
-                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                          {item.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-lg font-bold text-orange-600">
-                          {formatCurrency(item.price)}
+              {selectedCategoryData.menuItems.map((item) => {
+                const itemInCart = cartItems.find(cartItem => cartItem.menuItemId === item.id)
+                const isUnavailable = !item.isAvailable
+                
+                return (
+                  <div
+                    key={item.id}
+                    className={`bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden ${
+                      isUnavailable ? 'opacity-50 relative' : ''
+                    } ${itemInCart && isUnavailable ? 'ring-2 ring-orange-500' : ''}`}
+                  >
+                    {isUnavailable && (
+                      <div className="absolute top-2 right-2 z-10">
+                        <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-lg shadow-lg">
+                          Unavailable
                         </span>
-                        <Button
-                          onClick={() => handleAddToCart(item)}
-                          disabled={!vendor.isOnline || !item.isAvailable}
-                          size="sm"
-                          className="px-3 py-1.5 text-xs"
-                        >
-                          {item.isAvailable ? 'Add to Cart' : 'Unavailable'}
-                        </Button>
+                      </div>
+                    )}
+                    <div className="flex gap-3 p-3">
+                      {/* Item Image */}
+                      <div className="flex-shrink-0">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-20 h-20 md:w-24 md:h-24 rounded-xl object-cover"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl bg-gradient-to-br from-orange-200 to-orange-300 flex items-center justify-center text-2xl">
+                            🍽️
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Item Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start gap-2">
+                          <h3 className="text-base font-bold text-gray-900 mb-0.5 flex-1">
+                            {item.name}
+                          </h3>
+                          {itemInCart && isUnavailable && (
+                            <AlertCircle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-1" />
+                          )}
+                        </div>
+                        {item.description && (
+                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                            {item.description}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-lg font-bold text-orange-600">
+                            {formatCurrency(item.price)}
+                          </span>
+                          <Button
+                            onClick={() => handleAddToCart(item)}
+                            disabled={!vendor.isOnline || !item.isAvailable}
+                            size="sm"
+                            className="px-3 py-1.5 text-xs"
+                          >
+                            {item.isAvailable ? 'Add to Cart' : 'Unavailable'}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Empty State */}
@@ -418,6 +660,25 @@ export default function StorefrontClient({ vendor }: StorefrontClientProps) {
 
       {/* Cart Drawer */}
       <CartDrawer />
+      
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm animate-slide-down">
+          <div
+            className={`rounded-xl border p-4 shadow-lg backdrop-blur-md ${
+              toastMessage.type === 'success'
+                ? 'bg-green-50 border-green-200 text-green-900'
+                : toastMessage.type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-900'
+                : toastMessage.type === 'warning'
+                ? 'bg-orange-50 border-orange-200 text-orange-900'
+                : 'bg-blue-50 border-blue-200 text-blue-900'
+            }`}
+          >
+            <p className="text-sm font-medium">{toastMessage.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
