@@ -27,6 +27,7 @@ export default async function StorefrontPage({ params }: StorefrontPageProps) {
       businessPhone: true,
       isOnline: true,
       deliveryFee: true,
+      cuisineTags: true,
       categories: {
         orderBy: {
           sortOrder: 'asc',

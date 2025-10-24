@@ -9,9 +9,11 @@ import QRCode from '@/components/ui/QRCode'
 import ImageUpload from '@/components/ui/ImageUpload'
 import PopularItemsSection from '@/components/dashboard/PopularItemsSection'
 import { useToast } from '@/components/ui/Toast'
-import { Download, Share2 } from 'lucide-react'
+import { Download } from 'lucide-react'
+import { FaWhatsapp, FaInstagram, FaTiktok } from 'react-icons/fa'
+import { FiCopy, FiCheck } from 'react-icons/fi'
 
-type Tab = 'info' | 'hours' | 'qr'
+type Tab = 'info' | 'hours' | 'payment' | 'qr'
 
 type DayHours = {
   open: string
@@ -36,6 +38,8 @@ interface Vendor {
   isOnline: boolean
   businessHours: BusinessHours | null
   slug: string
+  acceptedPaymentMethods: string[]
+  cuisineTags: string[]
 }
 
 const daysOfWeek = [
@@ -58,6 +62,24 @@ const defaultBusinessHours: BusinessHours = {
   sunday: { open: '09:00', close: '17:00', closed: true }
 }
 
+const cuisineTagSuggestions = [
+  'International',
+  'Local Dishes',
+  'Grilled',
+  'Fast Food',
+  'Vegetarian',
+  'Seafood',
+  'Street Food',
+  'Traditional',
+  'Modern Cuisine',
+  'Healthy Options',
+  'Breakfast',
+  'Lunch Specials',
+  'Dinner',
+  'Snacks',
+  'Beverages'
+]
+
 export default function ProfilePage() {
   const { showToast } = useToast()
   const qrRef = useRef<HTMLDivElement>(null)
@@ -78,6 +100,10 @@ export default function ProfilePage() {
   const [deliveryRange, setDeliveryRange] = useState(5)
   const [isOnline, setIsOnline] = useState(true)
   const [businessHours, setBusinessHours] = useState<BusinessHours>(defaultBusinessHours)
+  const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>(['cash_on_delivery'])
+  const [linkCopied, setLinkCopied] = useState(false)
+  const [cuisineTags, setCuisineTags] = useState<string[]>([])
+  const [customTag, setCustomTag] = useState('')
 
   // Validation errors
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
@@ -108,6 +134,8 @@ export default function ProfilePage() {
       setDeliveryRange(vendorData.deliveryRange || 5)
       setIsOnline(vendorData.isOnline ?? true)
       setBusinessHours(vendorData.businessHours || defaultBusinessHours)
+      setAcceptedPaymentMethods(vendorData.acceptedPaymentMethods || ['cash_on_delivery'])
+      setCuisineTags(vendorData.cuisineTags || [])
     } catch (error: any) {
       showToast({
         type: 'error',
@@ -197,6 +225,105 @@ export default function ProfilePage() {
     }
   }
 
+  const handleTogglePaymentMethod = async (method: string, enabled: boolean) => {
+    const previousValue = acceptedPaymentMethods
+    let newMethods: string[]
+    
+    if (enabled) {
+      newMethods = [...acceptedPaymentMethods, method]
+    } else {
+      newMethods = acceptedPaymentMethods.filter(m => m !== method)
+    }
+    
+    // Validation: At least one payment method must be enabled
+    if (newMethods.length === 0) {
+      showToast({
+        type: 'error',
+        message: 'At least one payment method must be enabled'
+      })
+      return
+    }
+    
+    // Optimistic update
+    setAcceptedPaymentMethods(newMethods)
+    
+    try {
+      const response = await fetch('/api/vendor/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acceptedPaymentMethods: newMethods })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update payment methods')
+      }
+      
+      showToast({
+        type: 'success',
+        message: 'Payment methods updated'
+      })
+    } catch (error: any) {
+      // Revert on error
+      setAcceptedPaymentMethods(previousValue)
+      showToast({
+        type: 'error',
+        message: error.message || 'Failed to update payment methods'
+      })
+    }
+  }
+
+  const handleToggleTag = (tag: string) => {
+    if (cuisineTags.includes(tag)) {
+      setCuisineTags(cuisineTags.filter(t => t !== tag))
+    } else {
+      if (cuisineTags.length >= 5) {
+        showToast({
+          type: 'error',
+          message: 'Maximum 5 tags allowed'
+        })
+        return
+      }
+      setCuisineTags([...cuisineTags, tag])
+    }
+  }
+
+  const handleAddCustomTag = () => {
+    const trimmedTag = customTag.trim()
+    
+    if (!trimmedTag) return
+    
+    if (cuisineTags.length >= 5) {
+      showToast({
+        type: 'error',
+        message: 'Maximum 5 tags allowed'
+      })
+      return
+    }
+    
+    if (cuisineTags.includes(trimmedTag)) {
+      showToast({
+        type: 'error',
+        message: 'Tag already added'
+      })
+      return
+    }
+    
+    if (trimmedTag.length > 30) {
+      showToast({
+        type: 'error',
+        message: 'Tag must be 30 characters or less'
+      })
+      return
+    }
+    
+    setCuisineTags([...cuisineTags, trimmedTag])
+    setCustomTag('')
+  }
+
+  const handleRemoveTag = (tag: string) => {
+    setCuisineTags(cuisineTags.filter(t => t !== tag))
+  }
+
   const handleSaveBusinessInfo = async () => {
     if (!validateBusinessInfo()) return
 
@@ -211,7 +338,8 @@ export default function ProfilePage() {
           whatsappNumber: whatsappNumber.trim() || null,
           description: description.trim() || null,
           address: address.trim() || null,
-          deliveryRange: deliveryRange
+          deliveryRange: deliveryRange,
+          cuisineTags: cuisineTags
         })
       })
 
@@ -434,30 +562,107 @@ export default function ProfilePage() {
     URL.revokeObjectURL(url)
   }
 
-  const handleShare = (platform: 'whatsapp' | 'instagram' | 'tiktok') => {
+  const handleCopyLink = async () => {
+    if (!vendor) return
+    
+    const storefrontUrl = `${window.location.origin}/${vendor.slug}`
+    
+    try {
+      await navigator.clipboard.writeText(storefrontUrl)
+      setLinkCopied(true)
+      showToast({
+        type: 'success',
+        message: 'Link copied to clipboard!'
+      })
+      
+      // Reset copied state after 3 seconds
+      setTimeout(() => {
+        setLinkCopied(false)
+      }, 3000)
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message: 'Failed to copy link'
+      })
+    }
+  }
+
+  const handleShare = async (platform: 'whatsapp' | 'instagram' | 'tiktok') => {
     if (!vendor) return
 
     const storefrontUrl = `${window.location.origin}/${vendor.slug}`
-    let shareUrl = ''
 
     switch (platform) {
       case 'whatsapp':
-        shareUrl = `https://wa.me/?text=${encodeURIComponent('Check out my menu: ' + storefrontUrl)}`
+        // WhatsApp supports pre-filled messages
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+          `Check out my menu at ${vendor.businessName}!\n${storefrontUrl}`
+        )}`
+        window.open(whatsappUrl, '_blank', 'width=600,height=700')
         break
+        
       case 'instagram':
-        shareUrl = 'https://www.instagram.com/'
+        // Copy link first, then open Instagram
+        try {
+          await navigator.clipboard.writeText(storefrontUrl)
+          showToast({
+            type: 'success',
+            message: 'Link copied! Opening Instagram...'
+          })
+          
+          // Try to open Instagram app first (mobile), fallback to web
+          const instagramAppUrl = 'instagram://'
+          const instagramWebUrl = 'https://www.instagram.com/'
+          
+          // Attempt app open
+          window.location.href = instagramAppUrl
+          
+          // Fallback to web after short delay if app doesn't open
+          setTimeout(() => {
+            window.open(instagramWebUrl, '_blank')
+          }, 1500)
+        } catch (error) {
+          showToast({
+            type: 'error',
+            message: 'Failed to copy link'
+          })
+        }
         break
+        
       case 'tiktok':
-        shareUrl = 'https://www.tiktok.com/'
+        // Copy link first, then open TikTok
+        try {
+          await navigator.clipboard.writeText(storefrontUrl)
+          showToast({
+            type: 'success',
+            message: 'Link copied! Opening TikTok...'
+          })
+          
+          // Try to open TikTok app first (mobile), fallback to web
+          const tiktokAppUrl = 'tiktok://'
+          const tiktokWebUrl = 'https://www.tiktok.com/'
+          
+          // Attempt app open
+          window.location.href = tiktokAppUrl
+          
+          // Fallback to web after short delay if app doesn't open
+          setTimeout(() => {
+            window.open(tiktokWebUrl, '_blank')
+          }, 1500)
+        } catch (error) {
+          showToast({
+            type: 'error',
+            message: 'Failed to copy link'
+          })
+        }
         break
     }
-
-    window.open(shareUrl, '_blank', 'width=600,height=400')
   }
 
   const tabs = [
     { value: 'info' as Tab, label: 'Business Info' },
     { value: 'hours' as Tab, label: 'Business Hours' },
+    { value: 'payment' as Tab, label: 'Payment Methods' },
     { value: 'qr' as Tab, label: 'QR Code' }
   ]
 
@@ -550,7 +755,7 @@ export default function ProfilePage() {
               <ImageUpload
                 label="Business Logo"
                 folder="logos"
-                currentImage={logoUrl}
+currentImage={logoUrl}
                 aspectRatio="square"
                 maxSizeMB={2}
                 onUploadComplete={handleLogoUpload}
@@ -675,6 +880,91 @@ export default function ProfilePage() {
                 </p>
               </div>
 
+              {/* Cuisine Tags Section */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Cuisine Tags (Optional)
+                  </label>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Help customers find you. Select up to 5 tags that describe your cuisine.
+                  </p>
+                </div>
+                
+                {/* Tag Suggestions */}
+                <div className="flex flex-wrap gap-2">
+                  {cuisineTagSuggestions.map((tag) => {
+                    const isSelected = cuisineTags.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handleToggleTag(tag)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-full transition-all ${
+                          isSelected
+                            ? 'bg-orange-500 text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    )
+                  })}
+                </div>
+                
+                {/* Selected Tags Display */}
+                {cuisineTags.length > 0 && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                    <p className="text-xs font-medium text-amber-800 mb-2">
+                      Selected Tags ({cuisineTags.length}/5):
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {cuisineTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-amber-300 text-amber-800 text-sm font-medium rounded-full"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(tag)}
+                            className="hover:text-red-600 transition-colors"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Custom Tag Input */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Add Custom Tag
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customTag}
+                      onChange={(e) => setCustomTag(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomTag())}
+                      placeholder="e.g., Organic Food"
+                      maxLength={30}
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomTag}
+                      disabled={!customTag.trim() || cuisineTags.length >= 5}
+                      className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <Button
                 onClick={handleSaveBusinessInfo}
                 loading={isSaving}
@@ -744,6 +1034,81 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {/* Payment Methods Tab */}
+          {selectedTab === 'payment' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Accepted Payment Methods
+                </h2>
+                <p className="text-gray-600 text-sm mb-6">
+                  Choose which payment methods you accept. Customers will only see enabled methods at checkout.
+                </p>
+              </div>
+              
+              {/* Payment Method Toggles */}
+              <div className="space-y-4">
+                {/* Cash on Delivery */}
+                <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border border-amber-200/30 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl flex items-center justify-center text-2xl">
+                      💵
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Cash on Delivery</p>
+                      <p className="text-sm text-gray-600">Customer pays when order arrives</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={acceptedPaymentMethods.includes('cash_on_delivery')}
+                    onChange={(value) => handleTogglePaymentMethod('cash_on_delivery', value)}
+                  />
+                </div>
+                
+                {/* MTN Mobile Money */}
+                <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border border-amber-200/30 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl flex items-center justify-center text-2xl">
+                      📱
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">MTN Mobile Money</p>
+                      <p className="text-sm text-gray-600">MTN MoMo payment</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={acceptedPaymentMethods.includes('mtn_mobile_money')}
+                    onChange={(value) => handleTogglePaymentMethod('mtn_mobile_money', value)}
+                  />
+                </div>
+                
+                {/* Airtel Money */}
+                <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border border-amber-200/30 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-red-400 to-red-500 rounded-xl flex items-center justify-center text-2xl">
+                      📱
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Airtel Money</p>
+                      <p className="text-sm text-gray-600">Airtel Money payment</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={acceptedPaymentMethods.includes('airtel_mobile_money')}
+                    onChange={(value) => handleTogglePaymentMethod('airtel_mobile_money', value)}
+                  />
+                </div>
+              </div>
+              
+              {/* Info Box */}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Note:</span> At least one payment method must be enabled. Changes are saved automatically.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* QR Code Tab */}
           {selectedTab === 'qr' && (
             <div className="space-y-6 max-w-2xl mx-auto">
@@ -791,10 +1156,10 @@ export default function ProfilePage() {
                 </Button>
               </div>
 
-              {/* Share Buttons */}
+              {/* Share Section */}
               <div className="border-t border-gray-200 pt-6">
                 <p className="text-sm font-medium text-gray-700 text-center mb-4">
-                  Share on Social Media
+                  Share Your Storefront
                 </p>
                 <div className="flex items-center justify-center gap-4">
                   {/* WhatsApp */}
@@ -841,6 +1206,13 @@ export default function ProfilePage() {
                       <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
                     </svg>
                   </button>
+                </div>
+                
+                {/* Info Text */}
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <p className="text-xs text-amber-800 text-center">
+                    <span className="font-semibold">Tip:</span> WhatsApp includes your message. Instagram/TikTok will copy the link for you to paste manually.
+                  </p>
                 </div>
               </div>
             </div>
