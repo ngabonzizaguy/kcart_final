@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { updateSession } from './lib/supabase/middleware'
+import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
@@ -8,7 +9,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Public routes that don't require auth
-  const publicRoutes = ['/', '/login', '/signup']
+  const publicRoutes = ['/', '/login', '/signup', '/unauthorized']
   const isPublicRoute = publicRoutes.includes(pathname)
 
   // Storefront routes (dynamic vendor pages)
@@ -31,6 +32,33 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(redirectUrl)
+  }
+
+  // Admin route protection
+  if (user && pathname.startsWith('/admin')) {
+    try {
+      // Check if user is an admin
+      const prisma = (await import('@/lib/prisma')).default
+      const admin = await prisma.admin.findUnique({
+        where: { authId: user.id },
+      })
+
+      if (!admin) {
+        // Not an admin, redirect to unauthorized
+        return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+
+      // Update last login timestamp (non-blocking)
+      prisma.admin.update({
+        where: { id: admin.id },
+        data: { lastLoginAt: new Date() },
+      }).catch(() => {
+        // Silently fail - not critical
+      })
+    } catch (error) {
+      console.error('Error checking admin status:', error)
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
   }
 
   return supabaseResponse
