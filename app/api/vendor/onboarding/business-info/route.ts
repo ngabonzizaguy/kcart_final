@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma'
 import { businessInfoSchema } from '@/lib/validations'
 import { generateSlug } from '@/lib/utils'
 
+// Force Node.js runtime for Prisma compatibility
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
