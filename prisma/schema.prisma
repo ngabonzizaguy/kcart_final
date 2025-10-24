@@ -11,6 +11,25 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// Admin Users
+model Admin {
+  id           String    @id @default(uuid())
+  authId       String    @unique // Supabase Auth user ID
+  email        String    @unique
+  name         String
+  role         String    @default("admin") // "admin" or "super_admin"
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+  
+  // Relations
+  logs         AdminLog[]
+  
+  @@index([authId])
+  @@index([email])
+}
+
 // Vendor Profile
 model Vendor {
   id                String      @id @default(uuid())
@@ -50,6 +69,14 @@ model Vendor {
   // Status
   isOnline          Boolean     @default(true)
   isSetupComplete   Boolean     @default(false)
+  isVerified        Boolean     @default(false) // Admin verification
+  isSuspended       Boolean     @default(false) // Admin suspension
+  
+  // Admin-managed fields
+  payoutBalance     Float       @default(0) // Running balance of earnings minus payouts
+  totalEarnings     Float       @default(0) // Lifetime earnings after commission
+  totalOrders       Int         @default(0) // Cached order count
+  lastPayoutAt      DateTime?   // Last successful payout date
 
   // Timestamps
   createdAt         DateTime    @default(now())
@@ -60,10 +87,45 @@ model Vendor {
   menuItems         MenuItem[]
   orders            Order[]
   reviews           Review[]
+  transactions      Transaction[]
+  payouts           Payout[]
+  commissionSettings CommissionSettings[]
 
   @@index([authId])
   @@index([slug])
   @@index([email])
+  @@index([isVerified])
+  @@index([isSuspended])
+  @@index([payoutBalance])
+}
+
+// Customer Profiles
+model Customer {
+  id                  String    @id @default(uuid())
+  phone               String    @unique // Primary identifier
+  email               String?   @unique
+  name                String    // Most recent name used
+  
+  // Aggregated metrics
+  totalOrders         Int       @default(0)
+  totalSpend          Float     @default(0)
+  averageOrderValue   Float     @default(0)
+  
+  // Activity tracking
+  lastOrderAt         DateTime?
+  firstOrderAt        DateTime  @default(now())
+  favoriteVendorId    String?
+  
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  orders              Order[]
+  
+  @@index([phone])
+  @@index([email])
+  @@index([totalSpend])
+  @@index([lastOrderAt])
 }
 
 // Menu Categories
@@ -127,8 +189,12 @@ model Order {
 
   vendorId          String
   vendor            Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  // Customer Reference
+  customerId        String?
+  customer          Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
-  // Customer Info
+  // Customer Info (kept for data redundancy)
   customerName      String
   customerPhone     String
   customerEmail     String?
@@ -146,6 +212,11 @@ model Order {
   // Status: new, preparing, ready, completed, cancelled
   status            String      @default("new")
   paymentMethod     String?     // "cash_on_delivery", "mtn_mobile_money", "airtel_mobile_money"
+  
+  // Admin-managed fields
+  transactionId     String?     @unique // Links to Transaction once payment processed
+  commissionAmount  Float?      // Platform commission for this order
+  vendorAmount      Float?      // Vendor earnings for this order
 
   // Timestamps
   createdAt         DateTime    @default(now())
@@ -154,11 +225,15 @@ model Order {
 
   // Relations
   items             OrderItem[]
+  transaction       Transaction?
 
   @@index([vendorId])
   @@index([vendorId, status])
   @@index([vendorId, createdAt])
   @@index([orderNumber])
+  @@index([customerId])
+  @@index([status])
+  @@index([paymentMethod])
 }
 
 // Order Items
@@ -184,6 +259,127 @@ model OrderItem {
 
   @@index([orderId])
   @@index([menuItemId])
+}
+
+// Payment Transactions
+model Transaction {
+  id                  String    @id @default(uuid())
+  orderId             String    @unique // Links to Order.id
+  order               Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  vendorId            String
+  vendor              Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  transactionId       String    @unique // Payment provider transaction reference
+  paymentMethod       String    // "cash_on_delivery", "mtn_mobile_money", "airtel_mobile_money"
+  paymentStatus       String    // "pending", "success", "failed"
+  
+  amount              Float     // Order total amount
+  platformCommission  Float     // Calculated commission amount
+  vendorAmount        Float     // Amount after commission deduction
+  
+  isMock              Boolean   @default(true) // Distinguishes test vs live transactions
+  metadata            Json?     // Provider-specific data (phone numbers, reference codes)
+  
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  completedAt         DateTime? // When payment confirmed
+  
+  @@index([orderId])
+  @@index([vendorId])
+  @@index([transactionId])
+  @@index([paymentStatus])
+  @@index([isMock])
+  @@index([createdAt])
+}
+
+// Vendor Payouts
+model Payout {
+  id                String    @id @default(uuid())
+  vendorId          String
+  vendor            Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  amount            Float     // Payout amount
+  status            String    // "pending", "processing", "completed", "failed"
+  batchId           String?   // Groups payouts processed together
+  transactionIds    String[]  // Array of Transaction.ids included in this payout
+  paymentMethod     String    // Payout method (e.g., "bank_transfer", "mobile_money")
+  
+  failureReason     String?   // Error message if failed
+  metadata          Json?     // Payout details
+  
+  createdAt         DateTime  @default(now())
+  processedAt       DateTime? // When payout initiated
+  completedAt       DateTime? // When payout confirmed
+  
+  @@index([vendorId])
+  @@index([status])
+  @@index([batchId])
+  @@index([createdAt])
+}
+
+// Commission Settings (Global and Vendor-specific)
+model CommissionSettings {
+  id                    String    @id @default(uuid())
+  vendorId              String?   @unique // NULL for global setting, vendorId for override
+  vendor                Vendor?   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  commissionPercentage  Float     // Platform commission % (e.g., 15.00 for 15%)
+  isActive              Boolean   @default(true)
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  updatedBy             String    // Admin.id who made the change
+  
+  @@index([vendorId])
+  @@index([isActive])
+}
+
+// Platform Settings (Singleton)
+model PlatformSettings {
+  id                          String    @id @default(uuid())
+  
+  // Commission & Payouts
+  globalCommissionPercentage  Float     @default(15.00)
+  payoutAutomationEnabled     Boolean   @default(false)
+  payoutSchedule              String    @default("weekly") // "daily", "weekly", "monthly"
+  minimumPayoutAmount         Float     @default(10000)
+  
+  // Payment Methods
+  acceptedPaymentMethods      String[]  @default(["cash_on_delivery", "mtn_mobile_money", "airtel_mobile_money"])
+  
+  // Branding
+  platformName                String    @default("DeliGo")
+  platformLogo                String?
+  supportEmail                String    @default("support@deligo.com")
+  
+  // Localization
+  timezone                    String    @default("Africa/Kigali")
+  locale                      String    @default("en") // "en" or "rw"
+  
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+}
+
+// Admin Audit Logs
+model AdminLog {
+  id          String    @id @default(uuid())
+  adminId     String
+  admin       Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  
+  action      String    // Action type (e.g., "vendor_verified", "payout_processed")
+  targetType  String    // Entity affected (e.g., "vendor", "payout", "order")
+  targetId    String    // ID of affected entity
+  details     Json      // Action details (before/after values, reason, etc.)
+  
+  ipAddress   String?
+  timestamp   DateTime  @default(now())
+  
+  @@index([adminId])
+  @@index([action])
+  @@index([targetType])
+  @@index([timestamp])
+  @@index([targetId])
 }
 
 // Customer Reviews
