@@ -1,10 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import DashboardAnalytics from '@/components/dashboard/DashboardAnalytics'
 import QuickActionsSection from '@/components/dashboard/QuickActionsSection'
-import { ShoppingBag, DollarSign, TrendingUp } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
+import TodayPopularItems from '@/components/dashboard/TodayPopularItems'
+
+// Helper to get Rwanda timezone date
+function getRwandaDate() {
+  // Rwanda is UTC+2
+  const now = new Date()
+  const rwandaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Africa/Kigali' }))
+  return rwandaTime
+}
+
+function getRwandaTodayStart() {
+  const rwandaNow = getRwandaDate()
+  const todayStart = new Date(rwandaNow)
+  todayStart.setHours(0, 0, 0, 0)
+  return todayStart
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -31,25 +44,24 @@ export default async function DashboardPage() {
     return null
   }
 
-  // Get today's orders for initial data
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // Get today's orders using Rwanda timezone
+  const todayStart = getRwandaTodayStart()
 
   const todayOrders = await prisma.order.findMany({
     where: {
       vendorId: vendor.id,
       createdAt: {
-        gte: today,
+        gte: todayStart,
       },
     },
   })
 
+  const todayRevenue = todayOrders.reduce((sum: number, order: typeof todayOrders[number]) => sum + order.total, 0)
+
   const todayStats = {
     totalOrders: todayOrders.length,
-    totalRevenue: todayOrders.reduce((sum: number, order: typeof todayOrders[number]) => sum + order.total, 0),
-    averageOrderValue: todayOrders.length > 0 
-      ? todayOrders.reduce((sum: number, order: typeof todayOrders[number]) => sum + order.total, 0) / todayOrders.length 
-      : 0,
+    totalRevenue: todayRevenue,
+    averageOrderValue: todayOrders.length > 0 ? todayRevenue / todayOrders.length : 0,
   }
 
   return (
@@ -65,10 +77,14 @@ export default async function DashboardPage() {
       </div>
 
       {/* Analytics with Tabs */}
-      <DashboardAnalytics 
+      <DashboardAnalytics
         initialData={todayStats}
         menuItemsCount={vendor._count.menuItems}
+        vendorId={vendor.id}
       />
+
+      {/* Today's Popular Items */}
+      <TodayPopularItems vendorId={vendor.id} />
 
       {/* Quick Actions */}
       <QuickActionsSection vendorSlug={vendor.slug} />
