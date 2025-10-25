@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/roleCheck';
 import prisma from '@/lib/prisma';
 
+// Force Node.js runtime for Prisma compatibility
+export const runtime = 'nodejs'
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }

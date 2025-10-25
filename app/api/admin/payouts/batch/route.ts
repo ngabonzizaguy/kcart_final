@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/roleCheck';
 import prisma from '@/lib/prisma';
 
+// Force Node.js runtime for Prisma compatibility
+export const runtime = 'nodejs'
+
 /**
  * Simulate payout processing
  * In production, this would integrate with actual payment provider

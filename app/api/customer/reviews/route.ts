@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// Force Node.js runtime for Prisma compatibility
+export const runtime = 'nodejs'
+
 // Validation schema for review creation
 const createReviewSchema = z.object({
   vendorId: z.string().uuid(),

@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { categorySchema } from '@/lib/validations'
 
+// Force Node.js runtime for Prisma compatibility
+export const runtime = 'nodejs'
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { categoryId: string } }
