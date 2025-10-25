@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { Home, ShoppingBag, Menu as MenuIcon, BarChart3, User, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import LanguageSwitcher from './LanguageSwitcher'
+import { createClient } from '@/lib/supabase/client'
 
 interface SidebarProps {
   locale: string
@@ -31,8 +32,18 @@ export default function Sidebar({ locale, translations }: SidebarProps) {
   ]
 
   const handleLogout = async () => {
-    // Logout logic will be implemented with Supabase
-    window.location.href = '/login'
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      // Clear local storage
+      localStorage.clear()
+      // Redirect to login
+      window.location.href = '/login'
+    } catch (error) {
+      // Even if signOut fails, redirect to login (session might already be invalid)
+      console.error('Logout error:', error)
+      window.location.href = '/login'
+    }
   }
 
   return (
