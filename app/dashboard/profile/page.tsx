@@ -9,9 +9,10 @@ import QRCode from '@/components/ui/QRCode'
 import ImageUpload from '@/components/ui/ImageUpload'
 import PopularItemsSection from '@/components/dashboard/PopularItemsSection'
 import { useToast } from '@/components/ui/Toast'
-import { Download } from 'lucide-react'
+import { Download, LogOut } from 'lucide-react'
 import { FaWhatsapp, FaInstagram, FaTiktok } from 'react-icons/fa'
 import { FiCopy, FiCheck } from 'react-icons/fi'
+import { createClient } from '@/lib/supabase/client'
 
 type Tab = 'info' | 'hours' | 'payment' | 'qr'
 
@@ -659,6 +660,27 @@ export default function ProfilePage() {
     }
   }
 
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      // Clear local storage
+      localStorage.clear()
+      showToast({
+        type: 'success',
+        message: 'Logged out successfully'
+      })
+      // Redirect to login
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 500)
+    } catch (error) {
+      // Even if signOut fails, redirect to login (session might already be invalid)
+      console.error('Logout error:', error)
+      window.location.href = '/login'
+    }
+  }
+
   const tabs = [
     { value: 'info' as Tab, label: 'Business Info' },
     { value: 'hours' as Tab, label: 'Business Hours' },
@@ -731,7 +753,7 @@ export default function ProfilePage() {
 
       {/* Tab Navigation */}
       <div className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth pb-2">
-        {tabs.map(tab => (
+{tabs.map(tab => (
           <button
             key={tab.value}
             onClick={() => setSelectedTab(tab.value)}
@@ -1219,6 +1241,17 @@ currentImage={logoUrl}
           )}
         </CardContent>
       </Card>
+
+      {/* Logout Button */}
+      <div className="mt-6">
+        <button
+          onClick={handleLogout}
+          className="w-full md:w-auto px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+        >
+          <LogOut className="h-5 w-5" />
+          Logout
+        </button>
+      </div>
     </div>
   )
 }

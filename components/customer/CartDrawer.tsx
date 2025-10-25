@@ -161,13 +161,27 @@ export default function CartDrawer() {
                 </p>
               </div>
 
-              <Button
-                onClick={handleCheckout}
-                fullWidth
-                className="min-h-touch"
-              >
-                Proceed to Checkout
-              </Button>
+              {/* Buttons stacked vertically */}
+              <div className="flex flex-col gap-3">
+                {/* Proceed to Checkout - Primary */}
+                <Button
+                  onClick={handleCheckout}
+                  fullWidth
+                  className="min-h-touch"
+                >
+                  Proceed to Checkout
+                </Button>
+
+                {/* Continue Shopping - Secondary */}
+                <Button
+                  onClick={closeDrawer}
+                  variant="outline"
+                  fullWidth
+                  className="min-h-touch"
+                >
+                  Continue Shopping
+                </Button>
+              </div>
             </div>
           </>
         )}

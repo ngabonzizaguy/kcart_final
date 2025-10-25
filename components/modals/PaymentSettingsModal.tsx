@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, CreditCard, Banknote, Smartphone } from 'lucide-react'
-import Button from '@/components/ui/Button'
+import { X } from 'lucide-react'
+import Switch from '@/components/ui/Switch'
 
 interface PaymentSettingsModalProps {
   isOpen: boolean
@@ -11,14 +11,9 @@ interface PaymentSettingsModalProps {
 }
 
 export default function PaymentSettingsModal({ isOpen, onClose, vendorId }: PaymentSettingsModalProps) {
-  const [paymentMethods, setPaymentMethods] = useState({
-    cashOnDelivery: true,
-    cardPayment: false,
-    onlinePayment: false,
-  })
+  const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>(['cash_on_delivery'])
   const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Fetch current payment settings
   useEffect(() => {
@@ -27,9 +22,18 @@ export default function PaymentSettingsModal({ isOpen, onClose, vendorId }: Paym
     }
   }, [isOpen])
 
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [toast])
+
   const fetchPaymentSettings = async () => {
     setIsLoading(true)
-    setError(null)
     try {
       const response = await fetch('/api/vendor/profile')
       if (!response.ok) {
@@ -37,39 +41,65 @@ export default function PaymentSettingsModal({ isOpen, onClose, vendorId }: Paym
       }
       const data = await response.json()
 
-      // Update payment methods from profile data
-      if (data.vendor?.paymentMethods) {
-        setPaymentMethods(data.vendor.paymentMethods)
+      // Update payment methods from profile data (using NEW schema)
+      if (data.vendor?.acceptedPaymentMethods) {
+        setAcceptedPaymentMethods(data.vendor.acceptedPaymentMethods)
+      } else {
+        // Default to cash on delivery if no payment methods set
+        setAcceptedPaymentMethods(['cash_on_delivery'])
       }
     } catch (error) {
       console.error('Fetch payment settings error:', error)
-      setError('Failed to load payment settings')
+      setToast({ type: 'error', message: 'Failed to load payment settings' })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleSave = async () => {
-    setIsSaving(true)
-    setError(null)
+  const handleTogglePaymentMethod = async (method: string, enabled: boolean) => {
+    const previousValue = acceptedPaymentMethods
+    let newMethods: string[]
+
+    if (enabled) {
+      newMethods = [...acceptedPaymentMethods, method]
+    } else {
+      newMethods = acceptedPaymentMethods.filter(m => m !== method)
+    }
+
+    // Validation: At least one payment method must be enabled
+    if (newMethods.length === 0) {
+      setToast({
+        type: 'error',
+        message: 'At least one payment method must be enabled'
+      })
+      return
+    }
+
+    // Optimistic update
+    setAcceptedPaymentMethods(newMethods)
+
     try {
       const response = await fetch('/api/vendor/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentMethods })
+        body: JSON.stringify({ acceptedPaymentMethods: newMethods })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to save payment settings')
+        throw new Error('Failed to update payment methods')
       }
 
-      // Close modal on success
-      onClose()
+      setToast({
+        type: 'success',
+        message: 'Payment methods updated'
+      })
     } catch (error) {
-      console.error('Save payment settings error:', error)
-      setError('Failed to save payment settings. Please try again.')
-    } finally {
-      setIsSaving(false)
+      // Revert on error
+      setAcceptedPaymentMethods(previousValue)
+      setToast({
+        type: 'error',
+        message: 'Failed to update payment methods'
+      })
     }
   }
 
@@ -103,97 +133,85 @@ export default function PaymentSettingsModal({ isOpen, onClose, vendorId }: Paym
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
               </div>
-            ) : error ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
             ) : (
               <>
                 <p className="text-sm text-gray-600 mb-4">
-                  Select the payment methods you accept from customers
+                  Choose which payment methods you accept. Changes are saved automatically.
                 </p>
 
-                {/* Cash on Delivery */}
-                <label className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 cursor-pointer hover:border-orange-300 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={paymentMethods.cashOnDelivery}
-                    onChange={(e) =>
-                      setPaymentMethods(prev => ({
-                        ...prev,
-                        cashOnDelivery: e.target.checked
-                      }))
-                    }
-                    className="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                  />
-                  <Banknote className="w-6 h-6 text-orange-600" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">Cash on Delivery</p>
-                    <p className="text-xs text-gray-600">Customer pays with cash when order arrives</p>
+                {/* Toast Notification */}
+                {toast && (
+                  <div className={`p-3 rounded-lg border ${
+                    toast.type === 'success'
+                      ? 'bg-green-50 border-green-200 text-green-800'
+                      : 'bg-red-50 border-red-200 text-red-800'
+                  }`}>
+                    <p className="text-sm font-medium">{toast.message}</p>
                   </div>
-                </label>
+                )}
 
-                {/* Card Payment */}
-                <label className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 cursor-pointer hover:border-orange-300 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={paymentMethods.cardPayment}
-                    onChange={(e) =>
-                      setPaymentMethods(prev => ({
-                        ...prev,
-                        cardPayment: e.target.checked
-                      }))
-                    }
-                    className="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                  />
-                  <CreditCard className="w-6 h-6 text-orange-600" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">Card Payment</p>
-                    <p className="text-xs text-gray-600">Accept credit/debit card payments</p>
+                {/* Payment Method Toggles */}
+                <div className="space-y-4">
+                  {/* Cash on Delivery */}
+                  <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border border-amber-200/30 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl flex items-center justify-center text-2xl">
+                        💵
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">Cash on Delivery</p>
+                        <p className="text-sm text-gray-600">Customer pays when order arrives</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={acceptedPaymentMethods.includes('cash_on_delivery')}
+                      onChange={(value) => handleTogglePaymentMethod('cash_on_delivery', value)}
+                    />
                   </div>
-                </label>
 
-                {/* Online Payment */}
-                <label className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200 cursor-pointer hover:border-orange-300 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={paymentMethods.onlinePayment}
-                    onChange={(e) =>
-                      setPaymentMethods(prev => ({
-                        ...prev,
-                        onlinePayment: e.target.checked
-                      }))
-                    }
-                    className="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                  />
-                  <Smartphone className="w-6 h-6 text-orange-600" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">Online Payment</p>
-                    <p className="text-xs text-gray-600">Mobile money and digital wallets</p>
+                  {/* MTN Mobile Money */}
+                  <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border border-amber-200/30 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl flex items-center justify-center text-2xl">
+                        📱
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">MTN Mobile Money</p>
+                        <p className="text-sm text-gray-600">MTN MoMo payment</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={acceptedPaymentMethods.includes('mtn_mobile_money')}
+                      onChange={(value) => handleTogglePaymentMethod('mtn_mobile_money', value)}
+                    />
                   </div>
-                </label>
+
+                  {/* Airtel Money */}
+                  <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border border-amber-200/30 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-red-400 to-red-500 rounded-xl flex items-center justify-center text-2xl">
+                        📱
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">Airtel Money</p>
+                        <p className="text-sm text-gray-600">Airtel Money payment</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={acceptedPaymentMethods.includes('airtel_mobile_money')}
+                      onChange={(value) => handleTogglePaymentMethod('airtel_mobile_money', value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Note:</span> At least one payment method must be enabled. Changes are saved automatically.
+                  </p>
+                </div>
               </>
             )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex gap-3 p-6 border-t border-gray-200">
-            <Button
-              variant="secondary"
-              onClick={onClose}
-              className="flex-1"
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              className="flex-1"
-              disabled={isSaving || isLoading}
-            >
-              {isSaving ? 'Saving...' : 'Save Settings'}
-            </Button>
           </div>
         </div>
       </div>

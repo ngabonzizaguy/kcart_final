@@ -447,7 +447,7 @@ export default function StorefrontClient({ vendor: initialVendor }: StorefrontCl
       <div className="max-w-4xl mx-auto px-4 -mt-6">
         <div className="bg-white rounded-3xl shadow-xl p-5 mb-5">
           {/* Restaurant Name */}
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
             {vendor.businessName}
           </h1>
 
