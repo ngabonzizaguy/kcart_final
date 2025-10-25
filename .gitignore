@@ -16,6 +16,14 @@
 # production
 /build
 
+# documentation
+# ADMIN_ACCESS_GUIDE.md
+DECISIONS.md
+DEPLOYMENT.md
+LLM_project_handover_instructions.txt
+SETUP.md
+
+
 # misc
 .DS_Store
 *.pem
