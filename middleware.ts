@@ -12,8 +12,11 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ['/', '/login', '/signup', '/unauthorized']
   const isPublicRoute = publicRoutes.includes(pathname)
 
-  // Storefront routes (dynamic vendor pages)
-  const isStorefront = pathname.match(/^\/[a-z0-9-]+$/) && !publicRoutes.includes(pathname)
+  // Check if this is an admin route FIRST (before storefront check)
+  const isAdminRoute = pathname.startsWith('/admin')
+
+  // Storefront routes (dynamic vendor pages) - EXCLUDE admin routes
+  const isStorefront = pathname.match(/^\/[a-z0-9-]+$/) && !publicRoutes.includes(pathname) && !isAdminRoute
   const isCheckout = pathname.match(/^\/[a-z0-9-]+\/checkout$/)
   const isOrderTracking = pathname.match(/^\/orders\/[A-Z0-9-]+$/)
 
@@ -27,15 +30,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Redirect unauthenticated users to login
-  if (!user && !isPublicRoute) {
-    const redirectUrl = new URL('/login', request.url)
-    redirectUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(redirectUrl)
-  }
+  // Admin route protection - check BEFORE general auth redirect
+  if (pathname.startsWith('/admin')) {
+    // Must be logged in first
+    if (!user) {
+      const redirectUrl = new URL('/login', request.url)
+      redirectUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
 
-  // Admin route protection
-  if (user && pathname.startsWith('/admin')) {
     try {
       // Check if user is an admin
       const prisma = (await import('@/lib/prisma')).default
@@ -59,6 +62,16 @@ export async function middleware(request: NextRequest) {
       console.error('Error checking admin status:', error)
       return NextResponse.redirect(new URL('/unauthorized', request.url))
     }
+
+    // Admin check passed, allow through
+    return supabaseResponse
+  }
+
+  // Redirect unauthenticated users to login (for non-admin routes)
+  if (!user && !isPublicRoute) {
+    const redirectUrl = new URL('/login', request.url)
+    redirectUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(redirectUrl)
   }
 
   return supabaseResponse
