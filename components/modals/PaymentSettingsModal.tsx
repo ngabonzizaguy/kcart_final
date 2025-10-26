@@ -12,6 +12,7 @@ interface PaymentSettingsModalProps {
 
 export default function PaymentSettingsModal({ isOpen, onClose, vendorId }: PaymentSettingsModalProps) {
   const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>(['cash_on_delivery'])
+  const [businessPhone, setBusinessPhone] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
