@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { updateSession } from './lib/supabase/middleware'
-import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
@@ -12,7 +11,7 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ['/', '/login', '/signup', '/unauthorized']
   const isPublicRoute = publicRoutes.includes(pathname)
 
-  // Check if this is an admin route FIRST (before storefront check)
+  // Check if this is an admin route
   const isAdminRoute = pathname.startsWith('/admin')
 
   // Storefront routes (dynamic vendor pages) - EXCLUDE admin routes
@@ -30,7 +29,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Admin route protection - check BEFORE general auth redirect
+  // Admin route protection - NEW APPROACH
   if (pathname.startsWith('/admin')) {
     // Must be logged in first
     if (!user) {
@@ -39,35 +38,29 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl)
     }
 
+    // Check admin status via API route (Edge-compatible)
     try {
-      // Check if user is an admin
-      const prisma = (await import('@/lib/prisma')).default
-      const admin = await prisma.admin.findUnique({
-        where: { authId: user.id },
+      const adminCheckUrl = new URL('/api/admin/check', request.url)
+      const adminCheckResponse = await fetch(adminCheckUrl, {
+        headers: {
+          'x-user-id': user.id, // Pass user ID to API
+        },
       })
 
-      if (!admin) {
+      if (!adminCheckResponse.ok) {
         // Not an admin, redirect to unauthorized
         return NextResponse.redirect(new URL('/unauthorized', request.url))
       }
 
-      // Update last login timestamp (non-blocking)
-      prisma.admin.update({
-        where: { id: admin.id },
-        data: { lastLoginAt: new Date() },
-      }).catch(() => {
-        // Silently fail - not critical
-      })
+      // Admin check passed, allow through
+      return supabaseResponse
     } catch (error) {
       console.error('Error checking admin status:', error)
       return NextResponse.redirect(new URL('/unauthorized', request.url))
     }
-
-    // Admin check passed, allow through
-    return supabaseResponse
   }
 
-  // Redirect unauthenticated users to login (for non-admin routes)
+  // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('redirect', pathname)
