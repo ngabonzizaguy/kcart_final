@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       data: {
         logoUrl: validatedData.logoUrl || null,
         coverUrl: validatedData.coverUrl || null,
+        coverUrls: validatedData.coverUrls || [],
       },
     })
 
