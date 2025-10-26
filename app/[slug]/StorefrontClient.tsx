@@ -47,6 +47,7 @@ interface Vendor {
   descriptionRw: string | null
   logoUrl: string | null
   coverUrl: string | null
+  coverUrls: string[] | null
   address: string | null
   businessPhone: string | null
   isOnline: boolean
