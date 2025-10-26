@@ -23,6 +23,7 @@ export default async function StorefrontPage({ params }: StorefrontPageProps) {
       descriptionRw: true,
       logoUrl: true,
       coverUrl: true,
+      coverUrls: true,
       address: true,
       businessPhone: true,
       isOnline: true,
