@@ -196,35 +196,38 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {kpiCards.map((kpi) => {
           const Icon = kpi.icon;
-          const CardWrapper = kpi.link ? Link : 'div';
-          const cardProps = kpi.link ? { href: kpi.link } : {};
-
-          return (
-            <CardWrapper key={kpi.title} {...cardProps}>
-              <Card
-                glass
-                padding="md"
-                className={`transition-all ${
-                  kpi.link ? 'hover:shadow-xl hover:scale-105 cursor-pointer' : ''
-                } ${kpi.isHighlight ? 'ring-2 ring-orange-400 ring-offset-2' : ''}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600">{kpi.title}</p>
-                    <p className="mt-2 text-3xl font-bold text-gray-900">
-                      {typeof kpi.value === 'number' ? kpi.value.toLocaleString() : kpi.value}
-                    </p>
-                    {kpi.subtitle && (
-                      <p className="text-xs text-gray-500 mt-1">{kpi.subtitle}</p>
-                    )}
-                    <div className="mt-2">{renderChangeIndicator(kpi.change || 0)}</div>
-                  </div>
-                  <div className={`rounded-full p-3 ${kpi.bgColor}`}>
-                    <Icon className={`h-6 w-6 ${kpi.iconColor}`} />
-                  </div>
+          const cardContent = (
+            <Card
+              glass
+              padding="md"
+              className={`transition-all ${
+                kpi.link ? 'hover:shadow-xl hover:scale-105 cursor-pointer' : ''
+              } ${kpi.isHighlight ? 'ring-2 ring-orange-400 ring-offset-2' : ''}`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">{kpi.title}</p>
+                  <p className="mt-2 text-3xl font-bold text-gray-900">
+                    {typeof kpi.value === 'number' ? kpi.value.toLocaleString() : kpi.value}
+                  </p>
+                  {kpi.subtitle && (
+                    <p className="text-xs text-gray-500 mt-1">{kpi.subtitle}</p>
+                  )}
+                  <div className="mt-2">{renderChangeIndicator(kpi.change || 0)}</div>
                 </div>
-              </Card>
-            </CardWrapper>
+                <div className={`rounded-full p-3 ${kpi.bgColor}`}>
+                  <Icon className={`h-6 w-6 ${kpi.iconColor}`} />
+                </div>
+              </div>
+            </Card>
+          );
+
+          return kpi.link ? (
+            <Link key={kpi.title} href={kpi.link}>
+              {cardContent}
+            </Link>
+          ) : (
+            <div key={kpi.title}>{cardContent}</div>
           );
         })}
       </div>
