@@ -48,6 +48,7 @@ model Vendor {
   // Media
   logoUrl           String?
   coverUrl          String?
+  coverUrls         String[] @default([])
 
   // Location
   address           String?
