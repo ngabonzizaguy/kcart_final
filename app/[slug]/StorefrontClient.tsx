@@ -420,26 +420,25 @@ export default function StorefrontClient({ vendor: initialVendor }: StorefrontCl
         </div>
       )}
 
-      {/* Cover Image with Open Badge */}
-      <div className="relative w-full h-64 md:h-80 bg-gradient-to-br from-amber-100 to-orange-100">
-        {vendor.coverUrl ? (
-          <img
-            src={vendor.coverUrl}
-            alt={vendor.businessName}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-6xl">🍽️</div>
-          </div>
-        )}
-        {/* Open/Closed Badge */}
+      {/* Cover Image Carousel with Open Badge */}
+      <div className="relative">
+        <CoverCarousel
+          images={
+            vendor.coverUrls && vendor.coverUrls.length > 0
+              ? vendor.coverUrls
+              : vendor.coverUrl
+                ? [vendor.coverUrl]
+                : []
+          }
+          businessName={vendor.businessName}
+        />
+        {/* Open/Closed Badge - overlay on carousel */}
         {vendor.isOnline ? (
-          <div className="absolute top-4 left-4 px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg shadow-lg">
+          <div className="absolute top-4 left-4 px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg shadow-lg z-10">
             Open
           </div>
         ) : (
-          <div className="absolute top-4 left-4 px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg shadow-lg">
+          <div className="absolute top-4 left-4 px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg shadow-lg z-10">
             Closed
           </div>
         )}
