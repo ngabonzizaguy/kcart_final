@@ -40,24 +40,21 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      // Check if user is an admin
-      const prisma = (await import('@/lib/prisma')).default
-      const admin = await prisma.admin.findUnique({
-        where: { authId: user.id },
+      // Check if user is an admin via Edge-compatible API route
+      const adminCheckUrl = new URL('/api/admin/check', request.url)
+      const adminCheckResponse = await fetch(adminCheckUrl, {
+        method: 'GET',
+        headers: {
+          'Cookie': request.headers.get('cookie') || '',
+        },
       })
 
-      if (!admin) {
+      const adminCheckData = await adminCheckResponse.json()
+
+      if (!adminCheckData.isAdmin) {
         // Not an admin, redirect to unauthorized
         return NextResponse.redirect(new URL('/unauthorized', request.url))
       }
-
-      // Update last login timestamp (non-blocking)
-      prisma.admin.update({
-        where: { id: admin.id },
-        data: { lastLoginAt: new Date() },
-      }).catch(() => {
-        // Silently fail - not critical
-      })
     } catch (error) {
       console.error('Error checking admin status:', error)
       return NextResponse.redirect(new URL('/unauthorized', request.url))
