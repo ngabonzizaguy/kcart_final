@@ -8,7 +8,7 @@ interface StorefrontPageProps {
   }
 }
 
-export default async function StorefrontPage({ params }: Props) {
+export default async function StorefrontPage({ params }: StorefrontPageProps) {
   const { slug } = params
 
   const vendor = await prisma.vendor.findUnique({
@@ -22,7 +22,7 @@ export default async function StorefrontPage({ params }: Props) {
       descriptionRw: true,
       logoUrl: true,
       coverUrl: true,
-      coverUrls: true,  // ← ADDED THIS LINE
+      coverUrls: true,
       address: true,
       businessPhone: true,
       isOnline: true,
