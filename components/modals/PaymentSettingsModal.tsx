@@ -49,6 +49,11 @@ export default function PaymentSettingsModal({ isOpen, onClose, vendorId }: Paym
         // Default to cash on delivery if no payment methods set
         setAcceptedPaymentMethods(['cash_on_delivery'])
       }
+
+      // Update business phone (used for mobile money payments)
+      if (data.vendor?.businessPhone) {
+        setBusinessPhone(data.vendor.businessPhone)
+      }
     } catch (error) {
       console.error('Fetch payment settings error:', error)
       setToast({ type: 'error', message: 'Failed to load payment settings' })
