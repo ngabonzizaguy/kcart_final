@@ -41,7 +41,7 @@ export default function AdminSidebar() {
         <div className="flex items-center flex-shrink-0 px-6 mb-8">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-              kCart Admin
+              DeliGo Admin
             </h1>
             <p className="text-xs text-gray-600 mt-1">Platform Management</p>
           </div>
