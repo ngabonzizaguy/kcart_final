@@ -91,26 +91,6 @@ export default function LocationPage() {
           error={errors.addressRw?.message}
         />
 
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Latitude"
-            type="number"
-            step="any"
-            placeholder="Optional"
-            {...register('latitude', { valueAsNumber: true })}
-            error={errors.latitude?.message}
-          />
-
-          <Input
-            label="Longitude"
-            type="number"
-            step="any"
-            placeholder="Optional"
-            {...register('longitude', { valueAsNumber: true })}
-            error={errors.longitude?.message}
-          />
-        </div>
-
         <Input
           label="Delivery Range (km)"
           type="number"
