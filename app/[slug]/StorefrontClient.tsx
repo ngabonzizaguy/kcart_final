@@ -6,6 +6,7 @@ import { useCartStore } from '@/lib/store/cartStore'
 import { formatCurrency } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import CartDrawer from '@/components/customer/CartDrawer'
+import CoverCarousel from '@/components/storefront/CoverCarousel'
 import { ShoppingCart, MapPin, Clock, Phone, Star, AlertCircle, CheckCircle, X, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -46,6 +47,7 @@ interface Vendor {
   descriptionRw: string | null
   logoUrl: string | null
   coverUrl: string | null
+  coverUrls: string[] | null
   address: string | null
   businessPhone: string | null
   isOnline: boolean
@@ -418,33 +420,32 @@ export default function StorefrontClient({ vendor: initialVendor }: StorefrontCl
         </div>
       )}
 
-      {/* Cover Image with Open Badge */}
-      <div className="relative w-full h-64 md:h-80 bg-gradient-to-br from-amber-100 to-orange-100">
-        {vendor.coverUrl ? (
-          <img
-            src={vendor.coverUrl}
-            alt={vendor.businessName}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-6xl">🍽️</div>
-          </div>
-        )}
-        {/* Open/Closed Badge */}
+      {/* Cover Image Carousel with Open Badge */}
+      <div className="relative">
+        <CoverCarousel
+          images={
+            vendor.coverUrls && vendor.coverUrls.length > 0
+              ? vendor.coverUrls
+              : vendor.coverUrl
+                ? [vendor.coverUrl]
+                : []
+          }
+          businessName={vendor.businessName}
+        />
+        {/* Open/Closed Badge - overlay on carousel */}
         {vendor.isOnline ? (
-          <div className="absolute top-4 left-4 px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg shadow-lg">
+          <div className="absolute top-4 left-4 px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg shadow-lg z-10">
             Open
           </div>
         ) : (
-          <div className="absolute top-4 left-4 px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg shadow-lg">
+          <div className="absolute top-4 left-4 px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg shadow-lg z-10">
             Closed
           </div>
         )}
       </div>
 
       {/* Restaurant Info Card */}
-      <div className="max-w-4xl mx-auto px-4 -mt-6">
+      <div className="max-w-4xl mx-auto px-4 mt-8">
         <div className="bg-white rounded-3xl shadow-xl p-5 mb-5">
           {/* Restaurant Name */}
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
@@ -684,4 +685,70 @@ export default function StorefrontClient({ vendor: initialVendor }: StorefrontCl
       )}
     </div>
   )
+}
+File 3: app/[slug]/page.tsx (MODIFIED - showing relevant section)
+// ... (imports remain the same)
+
+export default async function StorefrontPage({ params }: Props) {
+  const { slug } = params
+
+  const vendor = await prisma.vendor.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      slug: true,
+      businessName: true,
+      businessNameRw: true,
+      description: true,
+      descriptionRw: true,
+      logoUrl: true,
+      coverUrl: true,
+      coverUrls: true,  // ← ADDED THIS LINE
+      address: true,
+      businessPhone: true,
+      isOnline: true,
+      deliveryFee: true,
+      cuisineTags: true,
+      categories: {
+        orderBy: { sortOrder: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          nameRw: true,
+          description: true,
+          sortOrder: true,
+          menuItems: {
+            orderBy: { sortOrder: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              nameRw: true,
+              description: true,
+              descriptionRw: true,
+              price: true,
+              imageUrl: true,
+              isAvailable: true,
+            },
+          },
+        },
+      },
+      reviews: {
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          customerName: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+        },
+      },
+    },
+  })
+
+  if (!vendor) {
+    notFound()
+  }
+
+  return <StorefrontClient vendor={vendor} />
 }

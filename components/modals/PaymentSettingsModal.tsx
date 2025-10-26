@@ -12,6 +12,7 @@ interface PaymentSettingsModalProps {
 
 export default function PaymentSettingsModal({ isOpen, onClose, vendorId }: PaymentSettingsModalProps) {
   const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>(['cash_on_delivery'])
+  const [businessPhone, setBusinessPhone] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
@@ -47,6 +48,11 @@ export default function PaymentSettingsModal({ isOpen, onClose, vendorId }: Paym
       } else {
         // Default to cash on delivery if no payment methods set
         setAcceptedPaymentMethods(['cash_on_delivery'])
+      }
+
+      // Update business phone (used for mobile money payments)
+      if (data.vendor?.businessPhone) {
+        setBusinessPhone(data.vendor.businessPhone)
       }
     } catch (error) {
       console.error('Fetch payment settings error:', error)
@@ -138,6 +144,20 @@ export default function PaymentSettingsModal({ isOpen, onClose, vendorId }: Paym
                 <p className="text-sm text-gray-600 mb-4">
                   Choose which payment methods you accept. Changes are saved automatically.
                 </p>
+
+                {/* Payment Phone Number (from onboarding) */}
+                <div className="mb-4 p-4 bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-200 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">📱</span>
+                    <p className="text-sm font-semibold text-gray-900">Payment Phone Number</p>
+                  </div>
+                  <div className="bg-white/60 backdrop-blur-sm border border-orange-200/50 rounded-lg px-3 py-2 mb-2">
+                    <p className="text-base font-mono text-gray-900">{businessPhone || 'Not set'}</p>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    🔒 This is your business phone from onboarding. Mobile money payments will use this number.
+                  </p>
+                </div>
 
                 {/* Toast Notification */}
                 {toast && (
