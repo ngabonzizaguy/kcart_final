@@ -6,6 +6,7 @@ import { useCartStore } from '@/lib/store/cartStore'
 import { formatCurrency } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import CartDrawer from '@/components/customer/CartDrawer'
+import CoverCarousel from '@/components/storefront/CoverCarousel'
 import { ShoppingCart, MapPin, Clock, Phone, Star, AlertCircle, CheckCircle, X, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
