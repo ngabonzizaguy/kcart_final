@@ -148,7 +148,6 @@ export default function MediaPage() {
               aspectRatio="cover"
               onUploadComplete={handleAddCover}
               onRemove={() => {}}
-              showRemove={false}
             />
           )}
 
