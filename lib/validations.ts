@@ -24,6 +24,7 @@ export const businessInfoSchema = z.object({
 export const businessMediaSchema = z.object({
   logoUrl: z.string().url().optional().or(z.literal('')),
   coverUrl: z.string().url().optional().or(z.literal('')),
+  coverUrls: z.array(z.string().url()).optional(),
 })
 
 export const businessLocationSchema = z.object({
