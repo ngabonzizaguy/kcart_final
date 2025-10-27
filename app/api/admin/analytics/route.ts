@@ -38,9 +38,13 @@ export async function GET(request: NextRequest) {
     await requireAdmin();
 
     const searchParams = request.nextUrl.searchParams;
-    const dateFrom = new Date(searchParams.get('dateFrom') || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-    const dateTo = new Date(searchParams.get('dateTo') || new Date());
-    const granularity = (searchParams.get('granularity') || 'daily') as Granularity;
+    const dateRangeParam = searchParams.get('dateRange') || '30';
+    const daysBack = parseInt(dateRangeParam);
+    const dateFrom = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+    const dateTo = new Date();
+    const granularity = (searchParams.get('granularity') || 'day') as 'day' | 'week' | 'month';
+
+    console.log('Analytics request:', { dateFrom, dateTo, granularity, daysBack });
 
     // Fetch all orders in date range
     const orders = await prisma.order.findMany({
