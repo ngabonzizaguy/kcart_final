@@ -185,19 +185,37 @@ export async function GET(request: NextRequest) {
       return { date: item.date, count: cumulativeTotal };
     });
 
-    return NextResponse.json({
-      revenue: revenueData,
-      orders: ordersData,
-      vendors: {
-        topPerformers: topVendors,
+    // Format data to match frontend expectations
+    const formattedResponse = {
+      revenue: {
+        timeline: dateBuckets.map((date, index) => ({
+          date: date.toISOString(),
+          revenue: revenueData.gmv[index].value,
+          commission: revenueData.commission[index].value,
+        })),
       },
-      paymentMethods,
-      customers: {
-        new: customerGrowthData.new,
-        total: customerGrowthData.total,
-        repeatRate,
+      orders: {
+        byStatus: ordersData.byStatus,
       },
-    });
+      topVendors: topVendors.map((vendor, index) => ({
+        id: vendor.vendorId,
+        name: vendor.name,
+        revenue: vendor.revenue,
+        orders: orders.filter(o => o.vendor.id === vendor.vendorId).length,
+      })),
+      paymentMethods: [
+        { method: 'cash_on_delivery', count: paymentMethods.cod, revenue: 0 },
+        { method: 'mtn_mobile_money', count: paymentMethods.mtn, revenue: 0 },
+        { method: 'airtel_mobile_money', count: paymentMethods.airtel, revenue: 0 },
+      ].filter(pm => pm.count > 0),
+      customerGrowth: dateBuckets.map((date, index) => ({
+        date: date.toISOString(),
+        newCustomers: customerGrowthData.new[index].count,
+        totalCustomers: customerGrowthData.total[index].count,
+      })),
+    };
+
+    return NextResponse.json(formattedResponse);
   } catch (error: any) {
     console.error('Error fetching analytics:', error);
 
