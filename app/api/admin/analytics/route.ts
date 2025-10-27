@@ -219,13 +219,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(formattedResponse);
   } catch (error: any) {
     console.error('Error fetching analytics:', error);
+    console.error('Error stack:', error.stack);
 
     if (error.message.includes('Unauthorized') || error.message.includes('Forbidden')) {
       return NextResponse.json({ error: error.message }, { status: 403 });
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch analytics' },
+      { error: 'Failed to fetch analytics', details: error.message },
       { status: 500 }
     );
   }
