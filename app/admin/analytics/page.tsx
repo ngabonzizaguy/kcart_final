@@ -67,11 +67,20 @@ export default function AnalyticsPage() {
       const response = await fetch(
         `/api/admin/analytics?dateRange=${dateRange}&granularity=${granularity}`
       );
+
+      if (response.status === 403) {
+        // Redirect to unauthorized page
+        window.location.href = '/unauthorized';
+        return;
+      }
+
       if (!response.ok) throw new Error('Failed to fetch analytics');
+
       const analyticsData = await response.json();
       setData(analyticsData);
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setData(null);
     } finally {
       setLoading(false);
     }
