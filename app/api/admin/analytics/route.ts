@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 // Force Node.js runtime for Prisma compatibility
 export const runtime = 'nodejs'
 
-type Granularity = 'hourly' | 'daily' | 'weekly' | 'monthly';
+type Granularity = 'day' | 'week' | 'month';
 
 function getDateBuckets(dateFrom: Date, dateTo: Date, granularity: Granularity): Date[] {
   const buckets: Date[] = [];
@@ -15,16 +15,13 @@ function getDateBuckets(dateFrom: Date, dateTo: Date, granularity: Granularity):
     buckets.push(new Date(current));
 
     switch (granularity) {
-      case 'hourly':
-        current.setHours(current.getHours() + 1);
-        break;
-      case 'daily':
+      case 'day':
         current.setDate(current.getDate() + 1);
         break;
-      case 'weekly':
+      case 'week':
         current.setDate(current.getDate() + 7);
         break;
-      case 'monthly':
+      case 'month':
         current.setMonth(current.getMonth() + 1);
         break;
     }
