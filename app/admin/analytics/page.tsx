@@ -186,6 +186,86 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Total Vendors */}
+        <Card glass padding="md">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Vendors</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {data.kpis.totalVendors}
+              </p>
+            </div>
+            <div className="p-3 bg-purple-100 rounded-xl">
+              <Users className="h-6 w-6 text-purple-600" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Total Customers */}
+        <Card glass padding="md">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Customers</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {data.kpis.totalCustomers}
+              </p>
+            </div>
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <Users className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Total Orders */}
+        <Card glass padding="md">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Orders</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {data.kpis.totalOrders}
+              </p>
+            </div>
+            <div className="p-3 bg-amber-100 rounded-xl">
+              <ShoppingBag className="h-6 w-6 text-amber-600" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Total Revenue (GMV) */}
+        <Card glass padding="md">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Revenue</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {(data.kpis.totalRevenue / 1000).toFixed(0)}K
+              </p>
+              <p className="text-xs text-gray-500">RWF</p>
+            </div>
+            <div className="p-3 bg-green-100 rounded-xl">
+              <TrendingUp className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Platform Commission */}
+        <Card glass padding="md">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Commission</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {(data.kpis.totalCommission / 1000).toFixed(0)}K
+              </p>
+              <p className="text-xs text-gray-500">RWF</p>
+            </div>
+            <div className="p-3 bg-orange-100 rounded-xl">
+              <DollarSign className="h-6 w-6 text-orange-600" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
       {/* Revenue Trend Chart */}
       <Card glass padding="lg">
         <div className="flex items-center gap-3 mb-6">
