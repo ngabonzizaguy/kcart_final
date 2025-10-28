@@ -628,7 +628,7 @@ export default function StorefrontClient({ vendor: initialVendor }: StorefrontCl
                             size="sm"
                             className="px-3 py-1.5 text-xs"
                           >
-                            {item.isAvailable ? 'Add to Cart' : 'Unavailable'}
+                            {item.isAvailable ? 'Order' : 'Unavailable'}
                           </Button>
                         </div>
                       </div>
