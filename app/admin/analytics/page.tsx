@@ -94,7 +94,8 @@ export default function AnalyticsPage() {
       const hasData =
         analyticsData.revenue?.timeline?.length > 0 ||
         analyticsData.orders?.byStatus?.length > 0 ||
-        analyticsData.topVendors?.length > 0;
+        analyticsData.topVendors?.length > 0 ||
+        analyticsData.kpis;
 
       if (!hasData) {
         setError('No data available for the selected date range');
