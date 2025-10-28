@@ -139,51 +139,70 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
 
-    // Customer insights
-    const customers = await prisma.customer.findMany({
-      where: {
-        firstOrderAt: {
-          gte: dateFrom,
-          lte: dateTo,
-        },
-      },
-    });
-
-    const allCustomers = await prisma.customer.findMany({
-      select: {
-        totalOrders: true,
-      },
-    });
-
-    const repeatCustomers = allCustomers.filter(c => c.totalOrders > 1).length;
-    const repeatRate = allCustomers.length > 0 ? (repeatCustomers / allCustomers.length) * 100 : 0;
-
-    // Customer growth data
-    const customerGrowthData = {
+    // Customer insights - wrapped in try-catch to handle gracefully
+    let customers: any[] = [];
+    let allCustomers: any[] = [];
+    let repeatRate = 0;
+    let customerGrowthData = {
       new: dateBuckets.map(date => ({ date: date.toISOString(), count: 0 })),
       total: dateBuckets.map(date => ({ date: date.toISOString(), count: 0 })),
     };
 
-    customers.forEach(customer => {
-      const customerDate = new Date(customer.firstOrderAt);
-      let bucketIndex = 0;
+    try {
+      // Query customers with null check for firstOrderAt
+      customers = await prisma.customer.findMany({
+        where: {
+          firstOrderAt: {
+            not: null,
+            gte: dateFrom,
+            lte: dateTo,
+          },
+        },
+      });
 
-      for (let i = 0; i < dateBuckets.length - 1; i++) {
-        if (customerDate >= dateBuckets[i] && customerDate < dateBuckets[i + 1]) {
-          bucketIndex = i;
-          break;
+      allCustomers = await prisma.customer.findMany({
+        select: {
+          totalOrders: true,
+        },
+      });
+
+      const repeatCustomers = allCustomers.filter(c => c.totalOrders > 1).length;
+      repeatRate = allCustomers.length > 0 ? (repeatCustomers / allCustomers.length) * 100 : 0;
+
+      // Customer growth data
+      customers.forEach(customer => {
+        if (customer.firstOrderAt) {
+          const customerDate = new Date(customer.firstOrderAt);
+          let bucketIndex = 0;
+
+          for (let i = 0; i < dateBuckets.length - 1; i++) {
+            if (customerDate >= dateBuckets[i] && customerDate < dateBuckets[i + 1]) {
+              bucketIndex = i;
+              break;
+            }
+          }
+
+          customerGrowthData.new[bucketIndex].count++;
         }
-      }
+      });
 
-      customerGrowthData.new[bucketIndex].count++;
-    });
-
-    // Calculate cumulative total
-    let cumulativeTotal = 0;
-    customerGrowthData.total = customerGrowthData.new.map(item => {
-      cumulativeTotal += item.count;
-      return { date: item.date, count: cumulativeTotal };
-    });
+      // Calculate cumulative total
+      let cumulativeTotal = 0;
+      customerGrowthData.total = customerGrowthData.new.map(item => {
+        cumulativeTotal += item.count;
+        return { date: item.date, count: cumulativeTotal };
+      });
+    } catch (error) {
+      console.error('Customer query failed:', error);
+      // Continue with empty customer data - don't break entire analytics
+      customers = [];
+      allCustomers = [];
+      repeatRate = 0;
+      customerGrowthData = {
+        new: dateBuckets.map(date => ({ date: date.toISOString(), count: 0 })),
+        total: dateBuckets.map(date => ({ date: date.toISOString(), count: 0 })),
+      };
+    }
 
     // Format data to match frontend expectations
     const formattedResponse = {
