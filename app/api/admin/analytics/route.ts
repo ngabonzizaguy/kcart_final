@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 // Force Node.js runtime for Prisma compatibility
 export const runtime = 'nodejs'
 
-type Granularity = 'hourly' | 'daily' | 'weekly' | 'monthly';
+type Granularity = 'day' | 'week' | 'month';
 
 function getDateBuckets(dateFrom: Date, dateTo: Date, granularity: Granularity): Date[] {
   const buckets: Date[] = [];
@@ -15,16 +15,13 @@ function getDateBuckets(dateFrom: Date, dateTo: Date, granularity: Granularity):
     buckets.push(new Date(current));
 
     switch (granularity) {
-      case 'hourly':
-        current.setHours(current.getHours() + 1);
-        break;
-      case 'daily':
+      case 'day':
         current.setDate(current.getDate() + 1);
         break;
-      case 'weekly':
+      case 'week':
         current.setDate(current.getDate() + 7);
         break;
-      case 'monthly':
+      case 'month':
         current.setMonth(current.getMonth() + 1);
         break;
     }
@@ -38,9 +35,13 @@ export async function GET(request: NextRequest) {
     await requireAdmin();
 
     const searchParams = request.nextUrl.searchParams;
-    const dateFrom = new Date(searchParams.get('dateFrom') || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-    const dateTo = new Date(searchParams.get('dateTo') || new Date());
-    const granularity = (searchParams.get('granularity') || 'daily') as Granularity;
+    const dateRangeParam = searchParams.get('dateRange') || '30';
+    const daysBack = parseInt(dateRangeParam);
+    const dateFrom = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+    const dateTo = new Date();
+    const granularity = (searchParams.get('granularity') || 'day') as 'day' | 'week' | 'month';
+
+    console.log('Analytics request:', { dateFrom, dateTo, granularity, daysBack });
 
     // Fetch all orders in date range
     const orders = await prisma.order.findMany({
@@ -215,13 +216,6 @@ export async function GET(request: NextRequest) {
 
     // Format data to match frontend expectations
     const formattedResponse = {
-      kpis: {
-        totalVendors,
-        totalCustomers,
-        totalOrders,
-        totalRevenue,
-        totalCommission,
-      },
       revenue: {
         timeline: dateBuckets.map((date, index) => ({
           date: date.toISOString(),
@@ -253,20 +247,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(formattedResponse);
   } catch (error: any) {
     console.error('Error fetching analytics:', error);
-    console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
-
-    // Specific error responses
-    if (error.message?.includes('Unauthorized') || error.message?.includes('Forbidden')) {
-      return NextResponse.json({ error: 'Admin authentication required' }, { status: 403 });
-    }
 
     if (error.message?.includes('prisma') || error.message?.includes('database')) {
       return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
     }
 
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch analytics' },
+      { error: 'Failed to fetch analytics', details: error.message },
       { status: 500 }
     );
   }

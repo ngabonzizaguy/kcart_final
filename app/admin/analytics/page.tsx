@@ -83,10 +83,7 @@ export default function AnalyticsPage() {
         return;
       }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch analytics');
-      }
+      if (!response.ok) throw new Error('Failed to fetch analytics');
 
       const analyticsData = await response.json();
 
@@ -105,7 +102,6 @@ export default function AnalyticsPage() {
       }
     } catch (error: any) {
       console.error('Error fetching analytics:', error);
-      setError(error.message || 'Failed to fetch analytics');
       setData(null);
     } finally {
       setLoading(false);
