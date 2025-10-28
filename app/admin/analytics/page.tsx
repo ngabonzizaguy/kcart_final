@@ -114,10 +114,32 @@ export default function AnalyticsPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4">
+        <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 max-w-md text-center">
+          <div className="mb-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full">
+              <span className="text-2xl">⚠️</span>
+            </div>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Analytics Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchAnalytics}
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-600">Failed to load analytics data</p>
+        <p className="text-gray-600">Loading analytics...</p>
       </div>
     );
   }
