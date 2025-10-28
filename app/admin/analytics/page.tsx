@@ -27,6 +27,13 @@ import Card from '@/components/ui/Card';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface AnalyticsData {
+  kpis: {
+    totalVendors: number;
+    totalCustomers: number;
+    totalOrders: number;
+    totalRevenue: number;
+    totalCommission: number;
+  };
   revenue: {
     timeline: Array<{ date: string; revenue: number; commission: number }>;
   };
