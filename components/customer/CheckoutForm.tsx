@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -69,6 +69,7 @@ export default function CheckoutForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
     trigger,
   } = useForm<CheckoutFormData>({
@@ -82,6 +83,58 @@ export default function CheckoutForm({
   const deliveryType = watch('deliveryType')
   const calculatedDeliveryFee = deliveryType === 'delivery' ? deliveryFee : 0
   const total = subtotal + calculatedDeliveryFee
+
+  // Load customer info from localStorage on mount
+  useEffect(() => {
+    const loadCustomerInfo = () => {
+      if (typeof window === 'undefined') return
+
+      try {
+        const stored = localStorage.getItem('deligo-customer-info')
+        if (stored) {
+          const customerInfo = JSON.parse(stored)
+          if (customerInfo.customerName) {
+            setValue('customerName', customerInfo.customerName)
+          }
+          if (customerInfo.customerPhone) {
+            setValue('customerPhone', customerInfo.customerPhone)
+          }
+          if (customerInfo.customerEmail) {
+            setValue('customerEmail', customerInfo.customerEmail)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load customer info from localStorage:', error)
+        // Clear corrupted data
+        localStorage.removeItem('deligo-customer-info')
+      }
+    }
+
+    loadCustomerInfo()
+  }, [setValue])
+
+  // Save customer info to localStorage when fields change
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (name === 'customerName' || name === 'customerPhone' || name === 'customerEmail') {
+        if (typeof window === 'undefined') return
+
+        try {
+          const customerInfo = {
+            customerName: value.customerName || '',
+            customerPhone: value.customerPhone || '',
+            customerEmail: value.customerEmail || '',
+            lastUpdated: new Date().toISOString(),
+          }
+          localStorage.setItem('deligo-customer-info', JSON.stringify(customerInfo))
+        } catch (error) {
+          console.error('Failed to save customer info to localStorage:', error)
+        }
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [watch])
 
   const handleNextStep = async () => {
     let fieldsToValidate: (keyof CheckoutFormData)[] = []
@@ -144,6 +197,18 @@ export default function CheckoutForm({
       }
 
       const { order } = await response.json()
+
+      // Save recent order info for cart drawer success message
+      try {
+        const recentOrder = {
+          orderNumber: order.orderNumber,
+          timestamp: Date.now(),
+          vendorSlug: vendorSlug,
+        }
+        localStorage.setItem('deligo-recent-order', JSON.stringify(recentOrder))
+      } catch (error) {
+        console.error('Failed to save recent order to localStorage:', error)
+      }
 
       // Clear cart and navigate to storefront with success banner
       clearCart()

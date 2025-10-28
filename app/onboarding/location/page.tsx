@@ -2,12 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { businessLocationSchema, type BusinessLocationInput } from '@/lib/validations'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
-import TextArea from '@/components/ui/TextArea'
 import Card, { CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 
@@ -15,36 +11,37 @@ export default function LocationPage() {
   const router = useRouter()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [address, setAddress] = useState('')
+  const [addressRw, setAddressRw] = useState('')
+  const [deliveryRange, setDeliveryRange] = useState(5)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<BusinessLocationInput>({
-    resolver: zodResolver(businessLocationSchema),
-    defaultValues: {
-      deliveryRange: 5,
-    },
-  })
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-  const onSubmit = async (data: BusinessLocationInput) => {
+    if (!address || address.length < 3) {
+      showToast({
+        type: 'error',
+        message: 'Address is required',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       const response = await fetch('/api/vendor/onboarding/location', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          address,
+          addressRw: addressRw || undefined,
+          deliveryRange,
+        }),
       })
 
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || 'Failed to save location')
       }
-
-      showToast({
-        type: 'success',
-        message: 'Location saved!',
-      })
 
       router.push('/onboarding/contact')
     } catch (error: any) {
@@ -69,26 +66,26 @@ export default function LocationPage() {
         </div>
         <CardTitle>Location & Delivery</CardTitle>
         <CardDescription>
-          Where are you located and how far do you deliver?
+          Where is your business located?
         </CardDescription>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-6">
-        <TextArea
-          label="Address"
-          placeholder="Street address, city, district..."
-          rows={3}
-          {...register('address')}
-          error={errors.address?.message}
+      <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+        <Input
+          label="Business Address"
+          type="text"
+          placeholder="e.g., KN 5 Rd, Kigali"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
           required
         />
 
-        <TextArea
+        <Input
           label="Address (Kinyarwanda)"
+          type="text"
           placeholder="Optional"
-          rows={3}
-          {...register('addressRw')}
-          error={errors.addressRw?.message}
+          value={addressRw}
+          onChange={(e) => setAddressRw(e.target.value)}
         />
 
         <Input
@@ -103,6 +100,14 @@ export default function LocationPage() {
         />
 
         <div className="flex gap-3 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push('/onboarding/media')}
+            fullWidth
+          >
+            Back
+          </Button>
           <Button
             type="submit"
             fullWidth

@@ -11,7 +11,6 @@ interface StorefrontPageProps {
 export default async function StorefrontPage({ params }: StorefrontPageProps) {
   const { slug } = params
 
-  // Fetch vendor with categories and menu items
   const vendor = await prisma.vendor.findUnique({
     where: { slug },
     select: {
@@ -30,9 +29,7 @@ export default async function StorefrontPage({ params }: StorefrontPageProps) {
       deliveryFee: true,
       cuisineTags: true,
       categories: {
-        orderBy: {
-          sortOrder: 'asc',
-        },
+        orderBy: { sortOrder: 'asc' },
         select: {
           id: true,
           name: true,
@@ -40,12 +37,7 @@ export default async function StorefrontPage({ params }: StorefrontPageProps) {
           description: true,
           sortOrder: true,
           menuItems: {
-            where: {
-              isAvailable: true,
-            },
-            orderBy: {
-              sortOrder: 'asc',
-            },
+            orderBy: { sortOrder: 'asc' },
             select: {
               id: true,
               name: true,
@@ -60,9 +52,8 @@ export default async function StorefrontPage({ params }: StorefrontPageProps) {
         },
       },
       reviews: {
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
         select: {
           id: true,
           customerName: true,

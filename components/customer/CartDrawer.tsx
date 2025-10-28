@@ -1,9 +1,10 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useCartStore } from '@/lib/store/cartStore'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Plus, Minus, X } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, X, CheckCircle } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
 export default function CartDrawer() {
@@ -19,8 +20,53 @@ export default function CartDrawer() {
     subtotal,
   } = useCartStore()
 
+  const [recentOrder, setRecentOrder] = useState<{
+    orderNumber: string
+    timestamp: number
+    vendorSlug: string
+  } | null>(null)
+
   const count = itemCount()
   const total = subtotal()
+
+  // Check for recent order in localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    // Only check when cart is empty and drawer is open
+    if (items.length > 0 || !isDrawerOpen) {
+      setRecentOrder(null)
+      return
+    }
+
+    try {
+      const stored = localStorage.getItem('deligo-recent-order')
+      if (stored) {
+        const orderInfo = JSON.parse(stored)
+        const now = Date.now()
+        const fiveMinutes = 5 * 60 * 1000
+
+        // Check if order is less than 5 minutes old and from current vendor
+        if (
+          orderInfo.timestamp &&
+          orderInfo.orderNumber &&
+          orderInfo.vendorSlug &&
+          (now - orderInfo.timestamp) < fiveMinutes &&
+          orderInfo.vendorSlug === vendorSlug
+        ) {
+          setRecentOrder(orderInfo)
+        } else {
+          // Clear old or mismatched order
+          localStorage.removeItem('deligo-recent-order')
+          setRecentOrder(null)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load recent order from localStorage:', error)
+      localStorage.removeItem('deligo-recent-order')
+      setRecentOrder(null)
+    }
+  }, [items.length, isDrawerOpen, vendorSlug])
 
   if (!isDrawerOpen) return null
 
@@ -73,19 +119,37 @@ export default function CartDrawer() {
 
         {/* Content */}
         {items.length === 0 ? (
-          // Empty State
-          <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-            <ShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Your cart is empty
-            </h3>
-            <p className="text-gray-600 text-center mb-6">
-              Add items from the menu below
-            </p>
-            <Button onClick={closeDrawer} variant="outline">
-              Browse Menu
-            </Button>
-          </div>
+          recentOrder ? (
+            // Success State - Order Recently Placed
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+              <div className="bg-white/95 backdrop-blur-lg border-2 border-green-200 rounded-2xl p-6 max-w-sm w-full text-center">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  🎉 Your order has been placed successfully!
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Order #{recentOrder.orderNumber}
+                </p>
+                <Button onClick={closeDrawer} fullWidth className="bg-green-600 hover:bg-green-700">
+                  Continue Browsing
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Empty State - No Items
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+              <ShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Your cart is empty
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
+                Add items from the menu below
+              </p>
+              <Button onClick={closeDrawer} variant="outline">
+                Browse Menu
+              </Button>
+            </div>
+          )
         ) : (
           <>
             {/* Items List */}
