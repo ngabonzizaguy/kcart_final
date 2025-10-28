@@ -149,28 +149,18 @@ export async function GET(request: NextRequest) {
     };
 
     try {
-      // Query customers with null check for firstOrderAt
-      customers = await prisma.customer.findMany({
+      // Query all customers and filter by date range
+      const allCustomersWithDates = await prisma.customer.findMany({
         where: {
-          AND: [
-            {
-              firstOrderAt: {
-                not: null,
-              },
-            },
-            {
-              firstOrderAt: {
-                gte: dateFrom,
-              },
-            },
-            {
-              firstOrderAt: {
-                lte: dateTo,
-              },
-            },
-          ],
+          firstOrderAt: {
+            gte: dateFrom,
+            lte: dateTo,
+          },
         },
       });
+
+      // Filter out customers with null firstOrderAt
+      customers = allCustomersWithDates.filter(c => c.firstOrderAt !== null);
 
       allCustomers = await prisma.customer.findMany({
         select: {
