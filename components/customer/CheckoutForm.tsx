@@ -198,6 +198,18 @@ export default function CheckoutForm({
 
       const { order } = await response.json()
 
+      // Save recent order info for cart drawer success message
+      try {
+        const recentOrder = {
+          orderNumber: order.orderNumber,
+          timestamp: Date.now(),
+          vendorSlug: vendorSlug,
+        }
+        localStorage.setItem('deligo-recent-order', JSON.stringify(recentOrder))
+      } catch (error) {
+        console.error('Failed to save recent order to localStorage:', error)
+      }
+
       // Clear cart and navigate to storefront with success banner
       clearCart()
       showToast({
