@@ -46,6 +46,16 @@ export default function DashboardAnalytics({ initialData, menuItemsCount, vendor
     week: null,
     month: null,
   })
+  const [topItems, setTopItems] = useState<Record<Period, TopItem[]>>({
+    today: [],
+    week: [],
+    month: [],
+  })
+  const [popularCategories, setPopularCategories] = useState<Record<Period, PopularCategory[]>>({
+    today: [],
+    week: [],
+    month: [],
+  })
   const [isLoading, setIsLoading] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [hasPlayedSound, setHasPlayedSound] = useState(false)
