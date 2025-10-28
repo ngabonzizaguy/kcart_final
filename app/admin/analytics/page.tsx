@@ -54,6 +54,7 @@ interface AnalyticsData {
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState('30'); // days
   const [granularity, setGranularity] = useState('day'); // day, week, month
 
@@ -64,6 +65,7 @@ export default function AnalyticsPage() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(
         `/api/admin/analytics?dateRange=${dateRange}&granularity=${granularity}`
       );
@@ -74,12 +76,28 @@ export default function AnalyticsPage() {
         return;
       }
 
-      if (!response.ok) throw new Error('Failed to fetch analytics');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch analytics');
+      }
 
       const analyticsData = await response.json();
-      setData(analyticsData);
-    } catch (error) {
+
+      // Check if data is empty
+      const hasData =
+        analyticsData.revenue?.timeline?.length > 0 ||
+        analyticsData.orders?.byStatus?.length > 0 ||
+        analyticsData.topVendors?.length > 0;
+
+      if (!hasData) {
+        setError('No data available for the selected date range');
+        setData(null);
+      } else {
+        setData(analyticsData);
+      }
+    } catch (error: any) {
       console.error('Error fetching analytics:', error);
+      setError(error.message || 'Failed to fetch analytics');
       setData(null);
     } finally {
       setLoading(false);
