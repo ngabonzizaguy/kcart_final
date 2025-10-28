@@ -152,11 +152,23 @@ export async function GET(request: NextRequest) {
       // Query customers with null check for firstOrderAt
       customers = await prisma.customer.findMany({
         where: {
-          firstOrderAt: {
-            not: null,
-            gte: dateFrom,
-            lte: dateTo,
-          },
+          AND: [
+            {
+              firstOrderAt: {
+                not: null,
+              },
+            },
+            {
+              firstOrderAt: {
+                gte: dateFrom,
+              },
+            },
+            {
+              firstOrderAt: {
+                lte: dateTo,
+              },
+            },
+          ],
         },
       });
 
