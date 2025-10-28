@@ -309,56 +309,127 @@ export default function DashboardAnalytics({ initialData, menuItemsCount, vendor
           ))}
         </div>
       ) : currentData ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Total Orders */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Orders</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
-                    {currentData.totalOrders || 0}
-                  </p>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Total Orders */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Orders</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {currentData.totalOrders || 0}
+                    </p>
+                  </div>
+                  <ShoppingBag className="h-8 w-8 text-primary-500" />
                 </div>
-                <ShoppingBag className="h-8 w-8 text-primary-500" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Total Revenue */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Revenue</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
-                    {safeFormatCurrency(currentData.totalRevenue)}
-                  </p>
+            {/* Total Revenue */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Revenue</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {safeFormatCurrency(currentData.totalRevenue)}
+                    </p>
+                  </div>
+                  <DollarSign className="h-8 w-8 text-status-success" />
                 </div>
-                <DollarSign className="h-8 w-8 text-status-success" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Average Order Value or Menu Items */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {activeTab === 'today' ? 'Menu Items' : 'Avg Order'}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
-                    {activeTab === 'today'
-                      ? menuItemsCount
-                      : safeFormatCurrency(currentData.averageOrderValue)}
-                  </p>
+            {/* Average Order Value */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Avg Order</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">
+                      {safeFormatCurrency(currentData.averageOrderValue)}
+                    </p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-primary-500" />
                 </div>
-                <TrendingUp className="h-8 w-8 text-primary-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Top Items and Popular Categories */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {/* Top Items */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <BarChart3 className="h-5 w-5 text-orange-500" />
+                  <h3 className="text-lg font-semibold text-gray-900">Top Items</h3>
+                </div>
+                {topItems[activeTab] && topItems[activeTab].length > 0 ? (
+                  <div className="space-y-3">
+                    {topItems[activeTab].map((item, index) => (
+                      <div key={item.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-gray-500 w-6">#{index + 1}</span>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                            {item.nameRw && (
+                              <p className="text-xs text-gray-500">{item.nameRw}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-orange-600">{item.orderCount} sold</p>
+                          <p className="text-xs text-gray-500">{safeFormatCurrency(item.revenue)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="text-sm">No orders yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Popular Categories */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Tag className="h-5 w-5 text-amber-500" />
+                  <h3 className="text-lg font-semibold text-gray-900">Popular Categories</h3>
+                </div>
+                {popularCategories[activeTab] && popularCategories[activeTab].length > 0 ? (
+                  <div className="space-y-3">
+                    {popularCategories[activeTab].map((category, index) => (
+                      <div key={category.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-gray-500 w-6">#{index + 1}</span>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{category.name}</p>
+                            {category.nameRw && (
+                              <p className="text-xs text-gray-500">{category.nameRw}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-amber-600">{category.orderCount} orders</p>
+                          <p className="text-xs text-gray-500">{safeFormatCurrency(category.revenue)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="text-sm">No orders yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </>
       ) : null}
     </section>
   )
