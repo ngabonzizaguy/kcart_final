@@ -204,8 +204,22 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    // Calculate KPI summary totals
+    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+    const totalCommission = orders.reduce((sum, order) => sum + (order.commissionAmount || 0), 0);
+    const totalOrders = orders.length;
+    const totalVendors = vendorRevenue.size;
+    const totalCustomers = allCustomers.length;
+
     // Format data to match frontend expectations
     const formattedResponse = {
+      kpis: {
+        totalVendors,
+        totalCustomers,
+        totalOrders,
+        totalRevenue,
+        totalCommission,
+      },
       revenue: {
         timeline: dateBuckets.map((date, index) => ({
           date: date.toISOString(),
