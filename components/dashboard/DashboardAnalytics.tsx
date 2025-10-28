@@ -72,32 +72,62 @@ export default function DashboardAnalytics({ initialData, menuItemsCount, vendor
             }
           }
 
-          // Update today's stats in real-time
-          if (activeTab === 'today') {
-            setCachedData(prev => {
-              const todayData = prev.today
-              if (todayData) {
-                const newTotalOrders = todayData.totalOrders + 1
-                const newTotalRevenue = todayData.totalRevenue + newOrder.total
-                return {
-                  ...prev,
-                  today: {
-                    totalOrders: newTotalOrders,
-                    totalRevenue: newTotalRevenue,
-                    averageOrderValue: newTotalRevenue / newTotalOrders,
-                  }
-                }
-              }
-              return prev
-            })
-          }
+          // Calculate which time periods the order belongs to
+          const orderDate = new Date(newOrder.createdAt)
+          const now = new Date()
 
-          // Invalidate week and month cache to refetch on next tab click
-          setCachedData(prev => ({
-            ...prev,
-            week: null,
-            month: null,
-          }))
+          // Calculate date ranges
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+          // Week starts on Monday
+          const weekStart = new Date(now)
+          const dayOfWeek = weekStart.getDay()
+          const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Convert Sunday (0) to 6, others subtract 1
+          weekStart.setDate(weekStart.getDate() - diff)
+          weekStart.setHours(0, 0, 0, 0)
+
+          // Month starts on the 1st
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+
+          // Check which periods this order belongs to and update them
+          setCachedData(prev => {
+            const updates: Record<Period, AnalyticsData | null> = { ...prev }
+
+            // Update today if order is from today
+            if (orderDate >= todayStart && prev.today) {
+              const newTotalOrders = prev.today.totalOrders + 1
+              const newTotalRevenue = prev.today.totalRevenue + newOrder.total
+              updates.today = {
+                totalOrders: newTotalOrders,
+                totalRevenue: newTotalRevenue,
+                averageOrderValue: newTotalRevenue / newTotalOrders,
+              }
+            }
+
+            // Update week if order is from this week
+            if (orderDate >= weekStart && prev.week) {
+              const newTotalOrders = prev.week.totalOrders + 1
+              const newTotalRevenue = prev.week.totalRevenue + newOrder.total
+              updates.week = {
+                totalOrders: newTotalOrders,
+                totalRevenue: newTotalRevenue,
+                averageOrderValue: newTotalRevenue / newTotalOrders,
+              }
+            }
+
+            // Update month if order is from this month
+            if (orderDate >= monthStart && prev.month) {
+              const newTotalOrders = prev.month.totalOrders + 1
+              const newTotalRevenue = prev.month.totalRevenue + newOrder.total
+              updates.month = {
+                totalOrders: newTotalOrders,
+                totalRevenue: newTotalRevenue,
+                averageOrderValue: newTotalRevenue / newTotalOrders,
+              }
+            }
+
+            return updates
+          })
         }
       )
       .subscribe()
