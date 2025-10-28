@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Card, { CardContent } from '@/components/ui/Card'
-import { ShoppingBag, DollarSign, TrendingUp } from 'lucide-react'
+import { ShoppingBag, DollarSign, TrendingUp, BarChart3, Tag } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -14,6 +14,23 @@ interface AnalyticsData {
   totalOrders: number
   averageOrderValue: number
   menuItemsCount?: number
+}
+
+interface TopItem {
+  id: string
+  name: string
+  nameRw: string | null
+  orderCount: number
+  revenue: number
+  imageUrl: string | null
+}
+
+interface PopularCategory {
+  id: string
+  name: string
+  nameRw: string | null
+  orderCount: number
+  revenue: number
 }
 
 interface DashboardAnalyticsProps {
