@@ -237,13 +237,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(formattedResponse);
   } catch (error: any) {
     console.error('Error fetching analytics:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
 
-    if (error.message.includes('Unauthorized') || error.message.includes('Forbidden')) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
+    // Specific error responses
+    if (error.message?.includes('Unauthorized') || error.message?.includes('Forbidden')) {
+      return NextResponse.json({ error: 'Admin authentication required' }, { status: 403 });
+    }
+
+    if (error.message?.includes('prisma') || error.message?.includes('database')) {
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch analytics' },
+      { error: error.message || 'Failed to fetch analytics' },
       { status: 500 }
     );
   }
