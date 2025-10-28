@@ -119,19 +119,37 @@ export default function CartDrawer() {
 
         {/* Content */}
         {items.length === 0 ? (
-          // Empty State
-          <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-            <ShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Your cart is empty
-            </h3>
-            <p className="text-gray-600 text-center mb-6">
-              Add items from the menu below
-            </p>
-            <Button onClick={closeDrawer} variant="outline">
-              Browse Menu
-            </Button>
-          </div>
+          recentOrder ? (
+            // Success State - Order Recently Placed
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+              <div className="bg-white/95 backdrop-blur-lg border-2 border-green-200 rounded-2xl p-6 max-w-sm w-full text-center">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  🎉 Your order has been placed successfully!
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Order #{recentOrder.orderNumber}
+                </p>
+                <Button onClick={closeDrawer} fullWidth className="bg-green-600 hover:bg-green-700">
+                  Continue Browsing
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Empty State - No Items
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+              <ShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Your cart is empty
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
+                Add items from the menu below
+              </p>
+              <Button onClick={closeDrawer} variant="outline">
+                Browse Menu
+              </Button>
+            </div>
+          )
         ) : (
           <>
             {/* Items List */}
