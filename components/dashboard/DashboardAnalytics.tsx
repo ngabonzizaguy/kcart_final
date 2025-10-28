@@ -155,6 +155,31 @@ export default function DashboardAnalytics({ initialData, menuItemsCount, vendor
 
             return updates
           })
+
+          // Refetch top items and popular categories for affected periods
+          const refetchAnalytics = async (period: Period) => {
+            try {
+              const response = await fetch(`/api/vendor/analytics?period=${period}`)
+              if (response.ok) {
+                const data = await response.json()
+                setTopItems(prev => ({ ...prev, [period]: data.popularItems || [] }))
+                setPopularCategories(prev => ({ ...prev, [period]: data.popularCategories || [] }))
+              }
+            } catch (error) {
+              console.error('Error refetching analytics:', error)
+            }
+          }
+
+          // Refetch analytics for periods that were affected by this order
+          if (orderDate >= todayStart) {
+            refetchAnalytics('today')
+          }
+          if (orderDate >= weekStart) {
+            refetchAnalytics('week')
+          }
+          if (orderDate >= monthStart) {
+            refetchAnalytics('month')
+          }
         }
       )
       .subscribe()
