@@ -181,10 +181,76 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.orderCount - a.orderCount)
       .slice(0, 5)
 
+    // Calculate popular categories
+    const categoriesMap = new Map<string, {
+      id: string
+      name: string
+      nameRw: string | null
+      orderCount: number
+      revenue: number
+    }>()
+
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        if (item.menuItem.categoryId) {
+          const existing = categoriesMap.get(item.menuItem.categoryId)
+          if (existing) {
+            existing.orderCount += 1
+            existing.revenue += item.subtotal
+          } else {
+            // We need category name, so we'll need to join with Category table
+            categoriesMap.set(item.menuItem.categoryId, {
+              id: item.menuItem.categoryId,
+              name: '', // Will fetch separately
+              nameRw: null,
+              orderCount: 1,
+              revenue: item.subtotal
+            })
+          }
+        }
+      })
+    })
+
+    // Fetch category names for all categories found
+    const categoryIds = Array.from(categoriesMap.keys())
+    const categories = await prisma.category.findMany({
+      where: {
+        id: { in: categoryIds }
+      },
+      select: {
+        id: true,
+        name: true,
+        nameRw: true
+      }
+    })
+
+    // Update category names in the map
+    categories.forEach(category => {
+      const existing = categoriesMap.get(category.id)
+      if (existing) {
+        existing.name = category.name
+        existing.nameRw = category.nameRw
+      }
+    })
+
+    // Convert to array, sort by order count, take top 5
+    const popularCategories = Array.from(categoriesMap.values())
+      .sort((a, b) => b.orderCount - a.orderCount)
+      .slice(0, 5)
+
+    // Calculate totals for the period
+    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0)
+    const totalOrders = orders.length
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+
     return NextResponse.json({
       salesData,
       ordersData,
-      popularItems
+      popularItems,
+      popularCategories,
+      totalRevenue,
+      totalOrders,
+      averageOrderValue
     })
 
   } catch (error: any) {
