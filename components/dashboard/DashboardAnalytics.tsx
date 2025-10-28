@@ -219,6 +219,16 @@ export default function DashboardAnalytics({ initialData, menuItemsCount, vendor
           averageOrderValue: isNaN(avgOrderValue) ? 0 : avgOrderValue,
         }
       }))
+
+      // Store top items and popular categories
+      setTopItems(prev => ({
+        ...prev,
+        [period]: data.popularItems || []
+      }))
+      setPopularCategories(prev => ({
+        ...prev,
+        [period]: data.popularCategories || []
+      }))
     } catch (error) {
       console.error('Fetch analytics error:', error)
       // Set default values on error
@@ -230,6 +240,9 @@ export default function DashboardAnalytics({ initialData, menuItemsCount, vendor
           averageOrderValue: 0,
         }
       }))
+      // Set empty arrays on error
+      setTopItems(prev => ({ ...prev, [period]: [] }))
+      setPopularCategories(prev => ({ ...prev, [period]: [] }))
     } finally {
       setIsLoading(false)
     }
