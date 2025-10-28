@@ -1,9 +1,10 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useCartStore } from '@/lib/store/cartStore'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Plus, Minus, X } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, X, CheckCircle } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
 export default function CartDrawer() {
@@ -19,8 +20,53 @@ export default function CartDrawer() {
     subtotal,
   } = useCartStore()
 
+  const [recentOrder, setRecentOrder] = useState<{
+    orderNumber: string
+    timestamp: number
+    vendorSlug: string
+  } | null>(null)
+
   const count = itemCount()
   const total = subtotal()
+
+  // Check for recent order in localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    // Only check when cart is empty and drawer is open
+    if (items.length > 0 || !isDrawerOpen) {
+      setRecentOrder(null)
+      return
+    }
+
+    try {
+      const stored = localStorage.getItem('deligo-recent-order')
+      if (stored) {
+        const orderInfo = JSON.parse(stored)
+        const now = Date.now()
+        const fiveMinutes = 5 * 60 * 1000
+
+        // Check if order is less than 5 minutes old and from current vendor
+        if (
+          orderInfo.timestamp &&
+          orderInfo.orderNumber &&
+          orderInfo.vendorSlug &&
+          (now - orderInfo.timestamp) < fiveMinutes &&
+          orderInfo.vendorSlug === vendorSlug
+        ) {
+          setRecentOrder(orderInfo)
+        } else {
+          // Clear old or mismatched order
+          localStorage.removeItem('deligo-recent-order')
+          setRecentOrder(null)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load recent order from localStorage:', error)
+      localStorage.removeItem('deligo-recent-order')
+      setRecentOrder(null)
+    }
+  }, [items.length, isDrawerOpen, vendorSlug])
 
   if (!isDrawerOpen) return null
 
