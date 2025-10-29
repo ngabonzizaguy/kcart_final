@@ -155,14 +155,14 @@ export default function CheckoutForm({
     }
   }
 
-  const handlePrevStep = () => {
+  const handlePreviousStep = () => {
     setCurrentStep(currentStep - 1)
   }
 
   const onSubmit = async (data: CheckoutFormData) => {
     setLoading(true)
-
     try {
+      // Create order
       const orderData = {
         vendorId,
         customerName: data.customerName,
@@ -172,13 +172,10 @@ export default function CheckoutForm({
         deliveryAddress: data.deliveryAddress || undefined,
         deliveryNotes: data.deliveryNotes || undefined,
         paymentMethod: data.paymentMethod,
-        items: cartItems.map((item) => ({
+        items: cartItems.map(item => ({
           menuItemId: item.menuItemId,
-          name: item.name,
-          nameRw: item.nameRw,
-          price: item.price,
           quantity: item.quantity,
-          subtotal: item.price * item.quantity,
+          price: item.price,
         })),
         subtotal,
         deliveryFee: calculatedDeliveryFee,
@@ -229,290 +226,264 @@ export default function CheckoutForm({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="text-center mb-4">
-          <div className="text-sm text-gray-500 mb-2">
-            Step {currentStep} of 3
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Progress Steps */}
+      <div className="flex items-center justify-between mb-8">
+        {[1, 2, 3].map((step) => (
+          <div
+            key={step}
+            className={cn(
+              'flex items-center',
+              step < 3 && 'flex-1'
+            )}
+          >
+            <div
+              className={cn(
+                'w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all',
+                currentStep >= step
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white'
+                  : 'bg-gray-200 text-gray-500'
+              )}
+            >
+              {step}
+            </div>
+            {step < 3 && (
+              <div
+                className={cn(
+                  'h-1 flex-1 mx-2 rounded transition-all',
+                  currentStep > step ? 'bg-orange-500' : 'bg-gray-200'
+                )}
+              />
+            )}
           </div>
-          <CardTitle>Checkout</CardTitle>
-        </div>
-      </CardHeader>
+        ))}
+      </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-6">
-        {/* Step 1: Customer Information */}
-        {currentStep === 1 && (
-          <div className="space-y-4">
+      {/* Step 1: Customer Information */}
+      {currentStep === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Customer Information</CardTitle>
+            <CardDescription>Who should we deliver to?</CardDescription>
+          </CardHeader>
+          <div className="space-y-4 mt-4">
             <Input
-              label="Name"
-              placeholder="John Doe"
-              error={errors.customerName?.message}
+              label="Full Name"
               {...register('customerName')}
+              error={errors.customerName?.message}
+              required
             />
-
             <Input
-              label="Phone"
+              label="Phone Number"
               type="tel"
-              placeholder="+250 788 123 456"
-              error={errors.customerPhone?.message}
+              placeholder="e.g., 078XXXXXXX"
               {...register('customerPhone')}
+              error={errors.customerPhone?.message}
+              required
             />
-
             <Input
-              label="Email (optional)"
+              label="Email (Optional)"
               type="email"
-              placeholder="john@example.com"
-              error={errors.customerEmail?.message}
+              placeholder="your@email.com"
               {...register('customerEmail')}
+              error={errors.customerEmail?.message}
             />
-
+          </div>
+          <div className="mt-6">
             <Button
               type="button"
               onClick={handleNextStep}
               fullWidth
-              className="min-h-touch"
             >
-              Next
+              Continue
             </Button>
           </div>
-        )}
+        </Card>
+      )}
 
-        {/* Step 2: Delivery Method */}
-        {currentStep === 2 && (
-          <div className="space-y-4">
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Delivery Method
+      {/* Step 2: Delivery Details */}
+      {currentStep === 2 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Delivery Details</CardTitle>
+            <CardDescription>How would you like to receive your order?</CardDescription>
+          </CardHeader>
+          <div className="space-y-4 mt-4">
+            {/* Delivery Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Delivery Type
               </label>
-
-              <label className="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  value="delivery"
-                  {...register('deliveryType')}
-                  className="w-5 h-5 text-primary-500"
-                />
-                <div className="flex-1">
-                  <div className="font-medium">🚚 Delivery</div>
-                  <div className="text-sm text-gray-500">
-                    {formatCurrency(deliveryFee)}
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  value="pickup"
-                  {...register('deliveryType')}
-                  className="w-5 h-5 text-primary-500"
-                />
-                <div className="flex-1">
-                  <div className="font-medium">🏪 Pickup</div>
-                  <div className="text-sm text-gray-500">Free</div>
-                </div>
-              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={cn(
+                  'relative flex items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all',
+                  deliveryType === 'delivery'
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                )}>
+                  <input
+                    type="radio"
+                    {...register('deliveryType')}
+                    value="delivery"
+                    className="sr-only"
+                  />
+                  <span className="font-medium">Delivery</span>
+                </label>
+                <label className={cn(
+                  'relative flex items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all',
+                  deliveryType === 'pickup'
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                )}>
+                  <input
+                    type="radio"
+                    {...register('deliveryType')}
+                    value="pickup"
+                    className="sr-only"
+                  />
+                  <span className="font-medium">Pickup</span>
+                </label>
+              </div>
             </div>
 
+            {/* Delivery Address (only if delivery selected) */}
             {deliveryType === 'delivery' && (
-              <>
-                <Input
-                  label="Delivery Address"
-                  placeholder="123 Main St, Kigali"
-                  error={errors.deliveryAddress?.message}
-                  {...register('deliveryAddress')}
-                />
-
-                <TextArea
-                  label="Delivery Notes (optional)"
-                  placeholder="Ring bell twice, gate code, etc."
-                  error={errors.deliveryNotes?.message}
-                  {...register('deliveryNotes')}
-                  rows={3}
-                />
-              </>
+              <Input
+                label="Delivery Address"
+                placeholder="e.g., KN 5 Rd, Kigali"
+                {...register('deliveryAddress')}
+                error={errors.deliveryAddress?.message}
+                required
+              />
             )}
 
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                onClick={handlePrevStep}
-                variant="outline"
-              >
-                Back
-              </Button>
-              <Button
-                type="button"
-                onClick={handleNextStep}
-                fullWidth
-                className="min-h-touch"
-              >
-                Next
-              </Button>
-            </div>
+            {/* Delivery Notes */}
+            <TextArea
+              label="Delivery Notes (Optional)"
+              placeholder="Any special instructions?"
+              {...register('deliveryNotes')}
+              rows={3}
+            />
           </div>
-        )}
+          <div className="flex gap-3 mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePreviousStep}
+              fullWidth
+            >
+              Back
+            </Button>
+            <Button
+              type="button"
+              onClick={handleNextStep}
+              fullWidth
+            >
+              Continue
+            </Button>
+          </div>
+        </Card>
+      )}
 
-        {/* Step 3: Review & Confirm */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
+      {/* Step 3: Payment & Review */}
+      {currentStep === 3 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Method</CardTitle>
+            <CardDescription>Choose how you'd like to pay</CardDescription>
+          </CardHeader>
+          <div className="space-y-4 mt-4">
+            {/* Payment Methods */}
+            <div className="space-y-2">
+              {acceptedPaymentMethods.includes('cash_on_delivery') && (
+                <label className={cn(
+                  'relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all',
+                  watch('paymentMethod') === 'cash_on_delivery'
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                )}>
+                  <input
+                    type="radio"
+                    {...register('paymentMethod')}
+                    value="cash_on_delivery"
+                    className="sr-only"
+                  />
+                  <span className="font-medium">Cash on Delivery</span>
+                </label>
+              )}
+              {acceptedPaymentMethods.includes('mtn_mobile_money') && (
+                <label className={cn(
+                  'relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all',
+                  watch('paymentMethod') === 'mtn_mobile_money'
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                )}>
+                  <input
+                    type="radio"
+                    {...register('paymentMethod')}
+                    value="mtn_mobile_money"
+                    className="sr-only"
+                  />
+                  <span className="font-medium">MTN Mobile Money</span>
+                </label>
+              )}
+              {acceptedPaymentMethods.includes('airtel_mobile_money') && (
+                <label className={cn(
+                  'relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all',
+                  watch('paymentMethod') === 'airtel_mobile_money'
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                )}>
+                  <input
+                    type="radio"
+                    {...register('paymentMethod')}
+                    value="airtel_mobile_money"
+                    className="sr-only"
+                  />
+                  <span className="font-medium">Airtel Mobile Money</span>
+                </label>
+              )}
+            </div>
+
             {/* Order Summary */}
-            <div>
+            <div className="border-t border-gray-200 pt-4 mt-6">
               <h3 className="font-semibold text-gray-900 mb-3">Order Summary</h3>
               <div className="space-y-2 text-sm">
-                {cartItems.map((item) => (
-                  <div key={item.menuItemId} className="flex justify-between">
-                    <span className="text-gray-700">
-                      {item.quantity}× {item.name}
-                    </span>
-                    <span className="font-medium">
-                      {formatCurrency(item.price * item.quantity)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Totals */}
-            <div className="pt-4 border-t space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-700">Subtotal:</span>
-                <span className="font-semibold">
-                  {formatCurrency(subtotal)}
-                </span>
-              </div>
-              {calculatedDeliveryFee > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-700">Delivery Fee:</span>
-                  <span className="font-semibold">
-                    {formatCurrency(calculatedDeliveryFee)}
-                  </span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-medium">{formatCurrency(subtotal)}</span>
                 </div>
-              )}
-              <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t">
-                <span>Total:</span>
-                <span>{formatCurrency(total)}</span>
-              </div>
-            </div>
-
-            {/* Payment Method Selection */}
-            <div className="bg-white/95 backdrop-blur-lg border-2 border-orange-200 rounded-2xl p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Payment Method</h3>
-              
-              {(() => {
-                const paymentMethodConfig = [
-                  {
-                    value: 'cash_on_delivery',
-                    emoji: '💵',
-                    label: 'Cash on Delivery',
-                    description: 'Pay when you receive your order'
-                  },
-                  {
-                    value: 'mtn_mobile_money',
-                    emoji: '📱',
-                    label: 'MTN Mobile Money',
-                    description: 'You will receive payment instructions after order placement'
-                  },
-                  {
-                    value: 'airtel_mobile_money',
-                    emoji: '📱',
-                    label: 'Airtel Money',
-                    description: 'You will receive payment instructions after order placement'
-                  }
-                ]
-
-                const availablePaymentMethods = paymentMethodConfig.filter(pm => 
-                  acceptedPaymentMethods.includes(pm.value)
-                )
-
-                if (availablePaymentMethods.length === 0) {
-                  return (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-center">
-                      <p className="text-sm text-red-800">No payment methods available. Please contact the vendor.</p>
-                    </div>
-                  )
-                }
-
-                return (
-                  <div className="space-y-2">
-                    {availablePaymentMethods.map((method) => (
-                      <label 
-                        key={method.value}
-                        className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                          watch('paymentMethod') === method.value
-                            ? 'border-orange-500 bg-orange-50' 
-                            : 'border-gray-200 bg-white hover:border-orange-300'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          value={method.value}
-                          {...register('paymentMethod')}
-                          className="w-4 h-4 text-orange-500"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">
-                            {method.emoji} {method.label}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            {method.description}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )
-              })()}
-            </div>
-
-            {/* Customer Info */}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Customer Info</h3>
-              <div className="text-sm text-gray-700 space-y-1">
-                <p>{watch('customerName')}</p>
-                <p>{watch('customerPhone')}</p>
-                {watch('customerEmail') && <p>{watch('customerEmail')}</p>}
-              </div>
-            </div>
-
-            {/* Delivery Info */}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Delivery Info</h3>
-              <div className="text-sm text-gray-700 space-y-1">
-                <p className="font-medium capitalize">{deliveryType}</p>
-                {deliveryType === 'delivery' && watch('deliveryAddress') && (
-                  <p>{watch('deliveryAddress')}</p>
-                )}
-                {watch('deliveryNotes') && (
-                  <p className="text-gray-600 italic">
-                    Note: {watch('deliveryNotes')}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                onClick={handlePrevStep}
-                variant="outline"
-                disabled={loading}
-              >
-                Back
-              </Button>
-              <Button
-                type="submit"
-                fullWidth
-                loading={loading}
-                disabled={loading}
-                className="min-h-touch"
-              >
-                {loading ? 'Placing Order...' : 'Place Order'}
-              </Button>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Delivery Fee</span>
+                  <span className="font-medium">{formatCurrency(calculatedDeliveryFee)}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2 mt-2">
+                  <span>Total</span>
+                  <span>{formatCurrency(total)}</span>
+                </div>
+</div>
             </div>
           </div>
-        )}
-      </form>
-    </Card>
+          <div className="flex gap-3 mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePreviousStep}
+              fullWidth
+            >
+              Back
+            </Button>
+            <Button
+              type="submit"
+              fullWidth
+              loading={loading}
+              disabled={loading}
+            >
+              Place Order
+            </Button>
+          </div>
+        </Card>
+      )}
+    </form>
   )
 }
