@@ -88,16 +88,26 @@ export default function LocationPage() {
           onChange={(e) => setAddressRw(e.target.value)}
         />
 
-        <Input
-          label="Delivery Range (km)"
-          type="number"
-          min="1"
-          max="50"
-          {...register('deliveryRange', { valueAsNumber: true })}
-          error={errors.deliveryRange?.message}
-          required
-          helperText="How far from your location do you deliver?"
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Delivery Range: {deliveryRange} km
+          </label>
+          <input
+            type="range"
+            min="1"
+            max="20"
+            step="1"
+            value={deliveryRange}
+            onChange={(e) => setDeliveryRange(Number(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>1 km</span>
+            <span>20 km</span>
+          </div>
+        </div>
+
+        {/* REMOVED: Latitude and Longitude inputs */}
 
         <div className="flex gap-3 pt-4">
           <Button
