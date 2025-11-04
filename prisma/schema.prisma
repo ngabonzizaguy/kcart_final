@@ -367,17 +367,17 @@ model PlatformSettings {
 // Admin Audit Logs
 model AdminLog {
   id          String    @id @default(uuid())
-  adminId     String
-  admin       Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  
+  adminId     String?   // Optional - can be null for system actions
+  admin       Admin?    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
   action      String    // Action type (e.g., "vendor_verified", "payout_processed")
   targetType  String    // Entity affected (e.g., "vendor", "payout", "order")
   targetId    String    // ID of affected entity
   details     Json      // Action details (before/after values, reason, etc.)
-  
+
   ipAddress   String?
   timestamp   DateTime  @default(now())
-  
+
   @@index([adminId])
   @@index([action])
   @@index([targetType])
