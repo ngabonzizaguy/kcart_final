@@ -154,6 +154,7 @@ export const useCartStore = create<CartState>()(
           vendorSlug: null,
           vendorName: null,
           deliveryFee: 0,
+          acceptedPaymentMethods: [],
           isDrawerOpen: false,
         })
       },
