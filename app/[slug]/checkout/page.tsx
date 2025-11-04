@@ -37,31 +37,6 @@ export default function CheckoutPage() {
     }
   }, [items, vendorSlug, slug, router, showToast])
 
-  // Fetch vendor data to get accepted payment methods
-  useEffect(() => {
-    const fetchVendorData = async () => {
-      if (!slug) return
-      
-      try {
-        setIsLoadingVendor(true)
-        const response = await fetch(`/api/vendors/${slug}`)
-        
-        if (response.ok) {
-          const data = await response.json()
-          setAcceptedPaymentMethods(data.vendor?.acceptedPaymentMethods || ['cash_on_delivery'])
-        }
-      } catch (error) {
-        console.error('Failed to fetch vendor data:', error)
-        // Use default if fetch fails
-        setAcceptedPaymentMethods(['cash_on_delivery'])
-      } finally {
-        setIsLoadingVendor(false)
-      }
-    }
-
-    fetchVendorData()
-  }, [slug])
-
   // Don't render if cart is empty or vendor mismatch
   if (items.length === 0 || !vendorId || !vendorSlug) {
     return (
@@ -69,18 +44,6 @@ export default function CheckoutPage() {
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mb-4"></div>
           <p className="text-gray-600">Redirecting...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show loading while fetching vendor data
-  if (isLoadingVendor) {
-    return (
-      <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )
