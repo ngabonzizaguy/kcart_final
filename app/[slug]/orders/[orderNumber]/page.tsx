@@ -115,6 +115,7 @@ export default function OrderTrackingPage() {
             new: 'Your order has been received',
             preparing: 'Your order is now being prepared',
             ready: `Your order is ready for ${order.deliveryType}`,
+            delivered: 'Your order has been delivered. Thank you!',
             completed: 'Your order is completed',
             cancelled: 'Your order has been cancelled',
           }
