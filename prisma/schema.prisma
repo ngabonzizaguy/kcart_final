@@ -348,7 +348,8 @@ model PlatformSettings {
   
   // Payment Methods
   acceptedPaymentMethods      String[]  @default(["cash_on_delivery", "mtn_mobile_money", "airtel_mobile_money"])
-  
+  platformPaymentNumber      String?   // Admin-configured phone for all payments
+
   // Branding
   platformName                String    @default("DeliGo")
   platformLogo                String?
