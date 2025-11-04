@@ -229,6 +229,22 @@ export default function SettingsPage() {
         <Card>
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Payment Methods Configuration</h2>
           <div className="space-y-6">
+            {/* Platform Payment Number */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Platform Payment Number
+              </label>
+              <Input
+                type="tel"
+                placeholder="+250 788 123 456"
+                value={settings.platformPaymentNumber || ''}
+                onChange={(e) => setSettings({ ...settings, platformPaymentNumber: e.target.value })}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                All payments (COD, MTN, Airtel) will be routed to this number
+              </p>
+            </div>
+
             {/* Payment Mode Toggle */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
