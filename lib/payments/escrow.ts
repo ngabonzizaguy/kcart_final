@@ -2,7 +2,6 @@
 // Handles payment holding and release based on delivery confirmation
 
 import prisma from '@/lib/prisma';
-import { calculateCommission } from './commission';
 
 /**
  * Create escrow transaction when order is placed
