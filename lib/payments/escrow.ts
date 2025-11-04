@@ -113,7 +113,7 @@ export async function createEscrowTransaction(orderId: string): Promise<void> {
     // Create error log
     await prisma.adminLog.create({
       data: {
-        adminId: 'SYSTEM',
+        adminId: null, // System action
         action: 'escrow_creation_failed',
         targetType: 'order',
         targetId: orderId,
