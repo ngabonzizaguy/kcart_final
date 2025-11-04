@@ -51,10 +51,11 @@ export const useCartStore = create<CartState>()(
       vendorSlug: null,
       vendorName: null,
       deliveryFee: 0,
+      acceptedPaymentMethods: [],
       items: [],
       isDrawerOpen: false,
 
-      addItem: (vendorId, vendorSlug, vendorName, deliveryFee, item) => {
+      addItem: (vendorId, vendorSlug, vendorName, deliveryFee, acceptedPaymentMethods, item) => {
         const state = get()
 
         // If cart has items from different vendor, clear cart first
