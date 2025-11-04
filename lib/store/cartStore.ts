@@ -66,6 +66,7 @@ export const useCartStore = create<CartState>()(
             vendorSlug,
             vendorName,
             deliveryFee,
+            acceptedPaymentMethods,
           })
         }
 
