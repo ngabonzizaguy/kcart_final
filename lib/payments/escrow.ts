@@ -260,7 +260,6 @@ export async function handleDeliveryIssue(orderId: string, issueReason?: string)
     // Create admin log entry
     await prisma.adminLog.create({
       data: {
-        adminId: null, // System action
         action: 'delivery_issue_reported',
         targetType: 'order',
         targetId: orderId,
