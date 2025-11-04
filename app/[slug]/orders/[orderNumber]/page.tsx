@@ -87,6 +87,44 @@ export default function OrderTrackingPage() {
     fetchOrder()
   }, [orderNumber, showToast])
 
+  const handleDeliveryConfirmation = async (delivered: boolean) => {
+    setConfirmingDelivery(true)
+
+    try {
+      const response = await fetch(`/api/customer/orders/${orderNumber}/delivery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: delivered ? 'delivered' : 'not_delivered' }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update delivery status')
+      }
+
+      const result = await response.json()
+
+      // Update local order status
+      if (order) {
+        setOrder({ ...order, status: delivered ? 'delivered' : order.status })
+      }
+
+      showToast({
+        type: 'success',
+        message: delivered
+          ? 'Thank you for confirming! Your payment has been released to the vendor.'
+          : 'We\'re sorry to hear that. Our team will contact you shortly.',
+      })
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        message: error.message || 'Failed to update delivery status',
+      })
+    } finally {
+      setConfirmingDelivery(false)
+    }
+  }
+
   // Set up real-time subscriptions
   useEffect(() => {
     if (!order) return
