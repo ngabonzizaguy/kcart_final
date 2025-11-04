@@ -27,6 +27,7 @@ interface CartState {
     vendorSlug: string,
     vendorName: string,
     deliveryFee: number,
+    acceptedPaymentMethods: string[],
     item: Omit<CartItem, 'quantity'>
   ) => void
   removeItem: (menuItemId: string) => void
