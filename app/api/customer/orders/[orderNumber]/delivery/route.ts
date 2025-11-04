@@ -46,7 +46,7 @@ export async function POST(
         status: status === 'delivered' ? 'delivered' : 'ready', // Keep as 'ready' if not delivered for admin review
         deliveredAt: status === 'delivered' ? new Date() : null,
       },
-    } as any) // Type assertion to bypass TypeScript until Prisma client is regenerated
+    })
 
     // Handle delivery confirmation with escrow system
     if (status === 'delivered') {
