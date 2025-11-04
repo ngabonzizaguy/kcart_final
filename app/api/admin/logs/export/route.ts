@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
 
     const rows = logs.map((log) => [
       log.timestamp.toISOString(),
-      log.admin.name,
-      log.admin.email,
+      log.admin?.name || 'System',
+      log.admin?.email || 'system@deligo.com',
       log.action,
       log.targetType,
       log.targetId,
