@@ -550,6 +550,20 @@ export default function CheckoutForm({
           </div>
         )}
       </form>
+
+      {/* Payment Confirmation Modal */}
+      {pendingOrderData && (
+        <PaymentConfirmationModal
+          isOpen={showPaymentModal}
+          onClose={handlePaymentModalClose}
+          onConfirm={handlePaymentConfirmation}
+          orderData={{
+            total: pendingOrderData.total,
+            paymentMethod: pendingOrderData.paymentMethod,
+          }}
+          isLoading={loading}
+        />
+      )}
     </Card>
   )
 }
