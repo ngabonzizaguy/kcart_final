@@ -320,7 +320,10 @@ export default function SettingsPage() {
 
             <Button
               variant="primary"
-              onClick={() => handleSaveSection({ acceptedPaymentMethods: settings.acceptedPaymentMethods })}
+              onClick={() => handleSaveSection({
+                acceptedPaymentMethods: settings.acceptedPaymentMethods,
+                platformPaymentNumber: settings.platformPaymentNumber
+              })}
               disabled={saving}
               className="flex items-center gap-2"
             >
