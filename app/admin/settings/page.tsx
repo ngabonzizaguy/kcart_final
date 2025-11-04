@@ -15,6 +15,7 @@ interface PlatformSettings {
   payoutSchedule: string;
   minimumPayoutAmount: number;
   acceptedPaymentMethods: string[];
+  platformPaymentNumber: string | null;
   platformName: string;
   platformLogo: string | null;
   supportEmail: string;
