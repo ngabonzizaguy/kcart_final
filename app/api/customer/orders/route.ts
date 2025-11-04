@@ -183,6 +183,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Create escrow transaction for payment holding
+    try {
+      await createEscrowTransaction(order.id)
+    } catch (escrowError) {
+      console.error('Failed to create escrow transaction:', escrowError)
+      // Don't fail the order creation if escrow fails, but log it
+      // The escrow can be created later by admin or cron job
+    }
+
     return NextResponse.json(
       {
         success: true,
