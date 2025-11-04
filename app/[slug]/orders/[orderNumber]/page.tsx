@@ -355,6 +355,46 @@ export default function OrderTrackingPage() {
           </div>
         </Card>
 
+        {/* Review Section - Only show for completed orders */}
+        {(order.status === 'delivered' || order.status === 'completed') && !reviewSubmitted && (
+          <Card className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              How was your order?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Share your experience to help others and improve our service.
+            </p>
+            <ReviewForm
+              vendorId={order.vendorId}
+              orderNumber={orderNumber}
+              onSuccess={() => setReviewSubmitted(true)}
+            />
+          </Card>
+        )}
+
+        {/* Review Success Message */}
+        {reviewSubmitted && (
+          <Card className="p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">✅</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Thank you for your review!
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Your feedback helps us improve our service.
+              </p>
+              <Button
+                onClick={() => router.push(`/${slug}`)}
+                variant="outline"
+              >
+                Back to Menu
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Actions */}
         <div className="flex justify-center">
           <Button
