@@ -50,6 +50,7 @@ interface Vendor {
   coverUrls: string[] | null
   address: string | null
   businessPhone: string | null
+  acceptedPaymentMethods: string[]
   isOnline: boolean
   deliveryFee: number
   cuisineTags: string[]
