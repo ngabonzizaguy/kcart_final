@@ -34,6 +34,12 @@ const statusSteps: {
     description: 'Your order is ready for pickup/delivery',
   },
   {
+    status: 'delivered',
+    label: 'Delivered',
+    icon: Package,
+    description: 'Your order has been delivered. Thank you!',
+  },
+  {
     status: 'completed',
     label: 'Completed',
     icon: Package,
