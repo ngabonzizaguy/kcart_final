@@ -10,9 +10,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const params = useParams()
   const { showToast } = useToast()
-  const { items, vendorId, vendorSlug, deliveryFee, subtotal } = useCartStore()
-  const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>(['cash_on_delivery'])
-  const [isLoadingVendor, setIsLoadingVendor] = useState(true)
+  const { items, vendorId, vendorSlug, deliveryFee, subtotal, acceptedPaymentMethods } = useCartStore()
 
   const slug = params.slug as string
   const cartSubtotal = subtotal()
