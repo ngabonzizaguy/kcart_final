@@ -44,7 +44,6 @@ export async function POST(
       where: { id: order.id },
       data: {
         status: status === 'delivered' ? 'delivered' : 'ready', // Keep as 'ready' if not delivered for admin review
-        deliveredAt: status === 'delivered' ? new Date() : null,
       },
     })
 
