@@ -10,7 +10,7 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { ArrowLeft } from 'lucide-react'
 
-type OrderStatusType = 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+type OrderStatusType = 'new' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled'
 
 interface OrderItem {
   id: string
