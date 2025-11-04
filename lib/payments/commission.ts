@@ -171,7 +171,6 @@ export async function calculateCommission(orderId: string): Promise<void> {
     // Create error log
     await prisma.adminLog.create({
       data: {
-        adminId: null, // System action
         action: 'commission_calculation_failed',
         targetType: 'order',
         targetId: orderId,
