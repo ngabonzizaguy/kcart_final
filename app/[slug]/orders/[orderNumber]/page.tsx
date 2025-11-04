@@ -51,6 +51,7 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [confirmingDelivery, setConfirmingDelivery] = useState(false)
 
   const slug = params.slug as string
   const orderNumber = params.orderNumber as string
