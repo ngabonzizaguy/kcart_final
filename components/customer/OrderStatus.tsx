@@ -3,7 +3,7 @@
 import { Clock, ChefHat, CheckCircle, Package, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type OrderStatusType = 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+type OrderStatusType = 'new' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled'
 
 interface OrderStatusProps {
   currentStatus: OrderStatusType
