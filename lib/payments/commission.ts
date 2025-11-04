@@ -241,7 +241,7 @@ export async function reverseCommission(orderId: string, reason?: string): Promi
     // Create admin log
     await prisma.adminLog.create({
       data: {
-        adminId: 'SYSTEM',
+        adminId: null, // System action
         action: 'commission_reversed',
         targetType: 'order',
         targetId: orderId,
