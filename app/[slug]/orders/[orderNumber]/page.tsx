@@ -240,6 +240,37 @@ export default function OrderTrackingPage() {
           <OrderStatus currentStatus={order.status} />
         </Card>
 
+        {/* Delivery Confirmation */}
+        {order.status === 'ready' && (
+          <Card className="p-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Confirm Delivery
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Have you received your order? Confirm to release payment to the vendor.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  onClick={() => handleDeliveryConfirmation(true)}
+                  disabled={confirmingDelivery}
+                  className="flex-1 sm:flex-initial min-w-[150px]"
+                >
+                  {confirmingDelivery ? 'Processing...' : 'Delivered ✅'}
+                </Button>
+                <Button
+                  onClick={() => handleDeliveryConfirmation(false)}
+                  variant="outline"
+                  disabled={confirmingDelivery}
+                  className="flex-1 sm:flex-initial min-w-[150px]"
+                >
+                  {confirmingDelivery ? 'Processing...' : 'Not Delivered ❌'}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Order Details */}
         <Card className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">
