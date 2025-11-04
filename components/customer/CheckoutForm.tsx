@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import TextArea from '@/components/ui/TextArea'
 import Card, { CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
+import PaymentConfirmationModal from '@/components/modals/PaymentConfirmationModal'
 
 // Validation schema
 const checkoutFormSchema = z.object({
