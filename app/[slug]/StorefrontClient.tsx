@@ -299,6 +299,7 @@ export default function StorefrontClient({ vendor: initialVendor }: StorefrontCl
       vendor.slug,
       vendor.businessName,
       vendor.deliveryFee,
+      vendor.acceptedPaymentMethods,
       {
         menuItemId: item.id,
         name: item.name,
