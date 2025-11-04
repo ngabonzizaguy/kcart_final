@@ -84,9 +84,16 @@ export async function POST(
         await prisma.adminLog.create({
           data: {
             action: 'DELIVERY_ISSUE_REPORTED',
-            details: `Customer reported order ${order.orderNumber} as not delivered - escrow flagged for review`,
-            orderId: order.id,
-            vendorId: order.vendorId,
+            targetType: 'order',
+            targetId: order.id,
+            details: {
+              message: `Customer reported order ${order.orderNumber} as not delivered - escrow flagged for review`,
+              orderNumber: order.orderNumber,
+              vendorId: order.vendorId,
+              vendorName: order.vendor?.businessName,
+              customerName: order.customerName,
+              customerPhone: order.customerPhone,
+            },
           },
         })
 
