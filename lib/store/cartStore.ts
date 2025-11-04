@@ -17,6 +17,7 @@ interface CartState {
   vendorSlug: string | null
   vendorName: string | null
   deliveryFee: number
+  acceptedPaymentMethods: string[]
   items: CartItem[]
   isDrawerOpen: boolean
 
