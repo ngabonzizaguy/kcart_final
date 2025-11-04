@@ -48,40 +48,45 @@ export async function POST(
       },
     })
 
-    // If delivered, trigger commission calculation and payment release
+    // Handle delivery confirmation with escrow system
     if (status === 'delivered') {
       try {
-        // This would integrate with the existing commission system
-        // For now, we'll just mark the order as delivered
-        // The commission calculation should happen automatically via existing triggers
+        // Release escrow funds to vendor
+        await releaseEscrowFunds(order.id)
 
         // Log the delivery confirmation for audit purposes
         await prisma.adminLog.create({
           data: {
             action: 'DELIVERY_CONFIRMED',
-            details: `Order ${order.orderNumber} marked as delivered by customer`,
+            details: `Order ${order.orderNumber} marked as delivered by customer - escrow funds released`,
             orderId: order.id,
             vendorId: order.vendorId,
           },
         })
 
-        // TODO: Trigger commission calculation and payment release
-        // This should integrate with the existing commission system in lib/payments/commission.ts
-
       } catch (error) {
         console.error('Error processing delivery confirmation:', error)
-        // Don't fail the request if commission processing fails
+        // Don't fail the request if escrow processing fails
       }
     } else {
-      // Log the not delivered status for admin review
-      await prisma.adminLog.create({
-        data: {
-          action: 'DELIVERY_ISSUE_REPORTED',
-          details: `Customer reported order ${order.orderNumber} as not delivered`,
-          orderId: order.id,
-          vendorId: order.vendorId,
-        },
-      })
+      try {
+        // Handle delivery issue with escrow system
+        await handleDeliveryIssue(order.id, 'Customer reported order as not delivered')
+
+        // Log the not delivered status for admin review
+        await prisma.adminLog.create({
+          data: {
+            action: 'DELIVERY_ISSUE_REPORTED',
+            details: `Customer reported order ${order.orderNumber} as not delivered - escrow flagged for review`,
+            orderId: order.id,
+            vendorId: order.vendorId,
+          },
+        })
+
+      } catch (error) {
+        console.error('Error processing delivery issue:', error)
+        // Don't fail the request if escrow processing fails
+      }
     }
 
     return NextResponse.json({
