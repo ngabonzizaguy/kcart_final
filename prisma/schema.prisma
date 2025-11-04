@@ -222,7 +222,8 @@ model Order {
   // Timestamps
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
-  completedAt       DateTime?
+  deliveredAt       DateTime?   // When customer confirms delivery
+  completedAt       DateTime?   // When order is marked completed (final state)
 
   // Relations
   items             OrderItem[]
