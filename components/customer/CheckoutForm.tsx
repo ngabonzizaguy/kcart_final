@@ -65,6 +65,8 @@ export default function CheckoutForm({
   const { clearCart } = useCartStore()
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [pendingOrderData, setPendingOrderData] = useState<any>(null)
 
   const {
     register,
