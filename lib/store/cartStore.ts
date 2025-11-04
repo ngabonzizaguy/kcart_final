@@ -185,6 +185,7 @@ export const useCartStore = create<CartState>()(
         vendorSlug: state.vendorSlug,
         vendorName: state.vendorName,
         deliveryFee: state.deliveryFee,
+        acceptedPaymentMethods: state.acceptedPaymentMethods,
         items: state.items,
       }),
     }
