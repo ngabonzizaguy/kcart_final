@@ -109,6 +109,7 @@ export const useCartStore = create<CartState>()(
           vendorId: newItems.length === 0 ? null : state.vendorId,
           vendorSlug: newItems.length === 0 ? null : state.vendorSlug,
           vendorName: newItems.length === 0 ? null : state.vendorName,
+          acceptedPaymentMethods: newItems.length === 0 ? [] : state.acceptedPaymentMethods,
         })
       },
 

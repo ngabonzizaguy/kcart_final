@@ -68,8 +68,8 @@ export async function GET(request: NextRequest) {
     // Format response
     const formattedLogs = logs.map((log) => ({
       id: log.id,
-      adminName: log.admin.name,
-      adminEmail: log.admin.email,
+      adminName: log.admin?.name || 'System',
+      adminEmail: log.admin?.email || 'system@deligo.com',
       action: log.action,
       targetType: log.targetType,
       targetId: log.targetId,
