@@ -97,6 +97,9 @@ export async function calculateCommission(orderId: string): Promise<void> {
       paymentStatus = 'success'; // Default to success for completed orders
     }
 
+    // Get platform settings for payment routing
+    const platformSettings = await prisma.platformSettings.findFirst();
+
     // Generate transaction ID
     const transactionId = `TXN-${order.orderNumber}-${Date.now()}`;
 
@@ -113,6 +116,11 @@ export async function calculateCommission(orderId: string): Promise<void> {
         vendorAmount,
         isMock: process.env.PAYMENTS_LIVE !== 'true',
         completedAt: new Date(),
+        metadata: {
+          platformPaymentNumber: platformSettings?.platformPaymentNumber || null,
+          escrowStatus: 'HELD',
+          releasedAt: new Date(), // For completed orders, release immediately
+        },
       },
     });
 
