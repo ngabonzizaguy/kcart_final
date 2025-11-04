@@ -166,6 +166,7 @@ export default function CheckoutForm({
     setLoading(true)
 
     try {
+      // Prepare order data
       const orderData = {
         vendorId,
         customerName: data.customerName,
@@ -186,6 +187,33 @@ export default function CheckoutForm({
         subtotal,
         deliveryFee: calculatedDeliveryFee,
         total,
+      }
+
+      // Store pending order data and show payment confirmation modal
+      setPendingOrderData(orderData)
+      setShowPaymentModal(true)
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: error.message,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePaymentConfirmation = async (delivered: boolean) => {
+    if (!pendingOrderData) return
+
+    setLoading(true)
+    setShowPaymentModal(false)
+
+    try {
+      // Add delivery confirmation to order data
+      const orderData = {
+        ...pendingOrderData,
+        deliveryConfirmed: delivered,
       }
 
       const response = await fetch('/api/customer/orders', {
@@ -228,7 +256,13 @@ export default function CheckoutForm({
       })
     } finally {
       setLoading(false)
+      setPendingOrderData(null)
     }
+  }
+
+  const handlePaymentModalClose = () => {
+    setShowPaymentModal(false)
+    setPendingOrderData(null)
   }
 
   return (
