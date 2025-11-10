@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { createEscrowTransaction } from '@/lib/payments/escrow'
+import { processPayment, type PaymentProvider } from '@/lib/payments/mobileMoney'
 
 // Force Node.js runtime for Prisma compatibility
 export const runtime = 'nodejs'
@@ -40,6 +41,14 @@ function generateOrderNumber(): string {
   const random = String(Math.floor(Math.random() * 1000)).padStart(3, '0')
 
   return `DEL-${year}${month}${day}-${random}`
+}
+
+function resolvePaymentProvider(
+  method?: string | null
+): PaymentProvider | null {
+  if (method === 'mtn_mobile_money') return 'mtn'
+  if (method === 'airtel_mobile_money') return 'airtel'
+  return null
 }
 
 export async function POST(request: NextRequest) {
@@ -183,13 +192,42 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Create escrow transaction for payment holding
-    try {
-      await createEscrowTransaction(order.id)
-    } catch (escrowError) {
-      console.error('Failed to create escrow transaction:', escrowError)
-      // Don't fail the order creation if escrow fails, but log it
-      // The escrow can be created later by admin or cron job
+    const paymentProvider = resolvePaymentProvider(data.paymentMethod || null)
+    let paymentResult: Awaited<ReturnType<typeof processPayment>> | null = null
+
+    if (paymentProvider) {
+      try {
+        paymentResult = await processPayment(
+          order.id,
+          order.total,
+          paymentProvider,
+          data.customerPhone
+        )
+      } catch (paymentError: any) {
+        console.error('Failed to initiate payment:', paymentError)
+
+        // Roll back the order so customers can try again
+        await prisma.order.delete({ where: { id: order.id } }).catch((rollbackError) => {
+          console.error('Failed to rollback order after payment error:', rollbackError)
+        })
+
+        return NextResponse.json(
+          {
+            error: 'Failed to initiate mobile money payment. Please try again.',
+            details: paymentError.message,
+          },
+          { status: 502 }
+        )
+      }
+    } else {
+      // Cash on delivery (or no payment method) still uses escrow tracking
+      try {
+        await createEscrowTransaction(order.id)
+      } catch (escrowError) {
+        console.error('Failed to create escrow transaction:', escrowError)
+        // Don't fail the order creation if escrow fails, but log it
+        // The escrow can be created later by admin or cron job
+      }
     }
 
     return NextResponse.json(
@@ -204,6 +242,13 @@ export async function POST(request: NextRequest) {
           total: order.total,
           createdAt: order.createdAt,
         },
+        payment: paymentResult
+          ? {
+              transactionId: paymentResult.transactionId,
+              status: paymentResult.status,
+              message: paymentResult.message,
+            }
+          : null,
       },
       { status: 200 }
     )

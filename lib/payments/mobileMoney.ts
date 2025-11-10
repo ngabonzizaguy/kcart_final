@@ -1,6 +1,7 @@
 // Mobile Money Payment Integration (MTN & Airtel)
 // Supports mock mode for testing and live mode for production
 
+import { randomUUID } from 'crypto';
 import prisma from '@/lib/prisma';
 
 export type PaymentProvider = 'mtn' | 'airtel';
@@ -10,6 +11,194 @@ interface PaymentResult {
   transactionId: string;
   status: PaymentStatus;
   message?: string;
+}
+
+interface MTNConfig {
+  baseUrl: string;
+  subscriptionKey: string;
+  apiUser: string;
+  apiKey: string;
+  targetEnvironment: string;
+  currency: string;
+  callbackUrl?: string;
+}
+
+interface MTNRequestToPayResponse {
+  transactionId: string;
+  status: PaymentStatus;
+  rawStatus: string;
+}
+
+const tokenCache: {
+  token: string | null;
+  expiresAt: number;
+} = {
+  token: null,
+  expiresAt: 0,
+};
+
+function getMtnConfig(): MTNConfig {
+  const baseUrl = process.env.MOMO_BASE_URL;
+  const subscriptionKey = process.env.MOMO_COLLECTION_SUBSCRIPTION_KEY;
+  const apiUser = process.env.MOMO_COLLECTION_API_USER;
+  const apiKey = process.env.MOMO_COLLECTION_API_KEY;
+  const targetEnvironment = process.env.MOMO_TARGET_ENV;
+  const currency = process.env.MOMO_CURRENCY || 'RWF';
+
+  if (!baseUrl) throw new Error('Missing MOMO_BASE_URL environment variable');
+  if (!subscriptionKey) throw new Error('Missing MOMO_COLLECTION_SUBSCRIPTION_KEY environment variable');
+  if (!apiUser) throw new Error('Missing MOMO_COLLECTION_API_USER environment variable');
+  if (!apiKey) throw new Error('Missing MOMO_COLLECTION_API_KEY environment variable');
+  if (!targetEnvironment) throw new Error('Missing MOMO_TARGET_ENV environment variable');
+
+  return {
+    baseUrl: baseUrl.replace(/\/$/, ''),
+    subscriptionKey,
+    apiUser,
+    apiKey,
+    targetEnvironment,
+    currency,
+    callbackUrl: process.env.MOMO_CALLBACK_URL,
+  };
+}
+
+function sanitizeMsisdn(phoneNumber: string): string {
+  const digits = phoneNumber.replace(/\D/g, '');
+
+  if (!digits) {
+    throw new Error('Phone number missing digits');
+  }
+
+  // Rwanda MSISDNs typically start with 07 / 078 / 079 or already include 250
+  if (digits.startsWith('0') && digits.length === 10) {
+    return `25${digits.substring(1)}`;
+  }
+
+  if (digits.length === 9) {
+    return `250${digits}`;
+  }
+
+  return digits;
+}
+
+async function getMtnAccessToken(config: MTNConfig): Promise<string> {
+  const now = Date.now();
+  if (tokenCache.token && tokenCache.expiresAt > now + 30_000) {
+    return tokenCache.token;
+  }
+
+  const authString = Buffer.from(`${config.apiUser}:${config.apiKey}`).toString('base64');
+
+  const response = await fetch(`${config.baseUrl}/collection/token/`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${authString}`,
+      'Ocp-Apim-Subscription-Key': config.subscriptionKey,
+      'Content-Length': '0',
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to obtain MTN access token: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  const accessToken = data.access_token as string | undefined;
+  const expiresIn = Number(data.expires_in || 0);
+
+  if (!accessToken) {
+    throw new Error('MTN token response missing access_token');
+  }
+
+  tokenCache.token = accessToken;
+  tokenCache.expiresAt = Date.now() + (expiresIn ? expiresIn * 1000 : 300000);
+
+  return accessToken;
+}
+
+function mapMtnStatus(status: string): PaymentStatus {
+  const normalized = status.toUpperCase();
+  if (normalized === 'SUCCESSFUL') return 'success';
+  if (normalized === 'FAILED') return 'failed';
+  return 'pending';
+}
+
+async function requestToPay(
+  config: MTNConfig,
+  token: string,
+  payload: {
+    referenceId: string;
+    amount: number;
+    currency: string;
+    msisdn: string;
+    externalId: string;
+    payerMessage: string;
+    payeeNote: string;
+  }
+): Promise<MTNRequestToPayResponse> {
+  const response = await fetch(`${config.baseUrl}/collection/v1_0/requesttopay`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'X-Reference-Id': payload.referenceId,
+      'X-Target-Environment': config.targetEnvironment,
+      'Ocp-Apim-Subscription-Key': config.subscriptionKey,
+      'Content-Type': 'application/json',
+      ...(config.callbackUrl ? { 'X-Callback-Url': config.callbackUrl } : {}),
+    },
+    body: JSON.stringify({
+      amount: payload.amount.toFixed(2),
+      currency: payload.currency,
+      externalId: payload.externalId,
+      payer: {
+        partyIdType: 'MSISDN',
+        partyId: payload.msisdn,
+      },
+      payerMessage: payload.payerMessage,
+      payeeNote: payload.payeeNote,
+    }),
+  });
+
+  if (response.status !== 202) {
+    const errorBody = await response.text();
+    throw new Error(`MTN request to pay failed: ${response.status} ${errorBody}`);
+  }
+
+  return {
+    transactionId: payload.referenceId,
+    status: 'pending',
+    rawStatus: 'PENDING',
+  };
+}
+
+async function fetchMtnTransactionStatus(
+  config: MTNConfig,
+  token: string,
+  referenceId: string
+): Promise<MTNRequestToPayResponse> {
+  const response = await fetch(`${config.baseUrl}/collection/v1_0/requesttopay/${referenceId}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'X-Target-Environment': config.targetEnvironment,
+      'Ocp-Apim-Subscription-Key': config.subscriptionKey,
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to fetch MTN transaction status: ${response.status} ${errorBody}`);
+  }
+
+  const body = await response.json();
+  const rawStatus = (body.status as string) || 'PENDING';
+
+  return {
+    transactionId: referenceId,
+    status: mapMtnStatus(rawStatus),
+    rawStatus,
+  };
 }
 
 /**
@@ -115,56 +304,66 @@ export async function initiateMTNPayment(
   amount: number,
   phoneNumber: string
 ): Promise<PaymentResult> {
-  // TODO: Replace with actual MTN MoMo API integration
-  // Documentation: https://momodeveloper.mtn.com/
-  // Endpoint: POST /collection/v1_0/requesttopay
+  const config = getMtnConfig();
+  const msisdn = sanitizeMsisdn(phoneNumber);
 
-  /*
-  Example implementation:
-
-  const response = await fetch(`${process.env.MTN_API_URL}/collection/v1_0/requesttopay`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.MTN_API_KEY}`,
-      'X-Reference-Id': uuidv4(),
-      'X-Target-Environment': 'sandbox', // or 'production'
-      'Ocp-Apim-Subscription-Key': process.env.MTN_SUBSCRIPTION_KEY!,
-      'Content-Type': 'application/json',
+  // Fetch order for vendor linkage
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      vendorId: true,
+      orderNumber: true,
+      customerName: true,
     },
-    body: JSON.stringify({
-      amount: amount.toString(),
-      currency: 'RWF',
-      externalId: orderId,
-      payer: {
-        partyIdType: 'MSISDN',
-        partyId: phoneNumber,
-      },
-      payerMessage: 'DeliGo Order Payment',
-      payeeNote: `Payment for order ${orderId}`,
-    }),
   });
 
-  const transactionId = response.headers.get('X-Reference-Id');
+  if (!order) {
+    throw new Error('Order not found');
+  }
 
-  // Create transaction record
-  await prisma.transaction.create({
+  const referenceId = randomUUID();
+  const accessToken = await getMtnAccessToken(config);
+
+  await requestToPay(config, accessToken, {
+    referenceId,
+    amount,
+    currency: config.currency,
+    msisdn,
+    externalId: order.orderNumber || order.id,
+    payerMessage: `Payment for ${order.orderNumber || order.id}`,
+    payeeNote: `DeliGo order ${order.orderNumber || order.id}`,
+  });
+
+  const transaction = await prisma.transaction.create({
     data: {
-      orderId,
-      transactionId: transactionId!,
+      orderId: order.id,
+      vendorId: order.vendorId,
+      transactionId: referenceId,
       paymentMethod: 'mtn_mobile_money',
       paymentStatus: 'pending',
       amount,
       platformCommission: 0,
       vendorAmount: 0,
       isMock: false,
-      metadata: { phoneNumber },
+      metadata: {
+        phoneNumber: msisdn,
+        provider: 'mtn',
+        targetEnvironment: config.targetEnvironment,
+      },
     },
   });
 
-  return { transactionId: transactionId!, status: 'pending' };
-  */
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { transactionId: transaction.id },
+  });
 
-  throw new Error('Live MTN payment not implemented. Set PAYMENTS_LIVE=false to use mock mode.');
+  return {
+    transactionId: referenceId,
+    status: 'pending',
+    message: 'Payment initiated. Please approve the request on your phone.',
+  };
 }
 
 /**
@@ -269,22 +468,28 @@ export async function checkPaymentStatus(
     return transaction.paymentStatus as PaymentStatus;
   }
 
-  // TODO: Poll actual payment provider API for status
-  /*
-  For MTN:
-  const response = await fetch(
-    `${process.env.MTN_API_URL}/collection/v1_0/requesttopay/${transactionId}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${process.env.MTN_API_KEY}`,
-        'X-Target-Environment': 'production',
-        'Ocp-Apim-Subscription-Key': process.env.MTN_SUBSCRIPTION_KEY!,
-      },
+  if (provider === 'mtn') {
+    const config = getMtnConfig();
+    const token = await getMtnAccessToken(config);
+    const statusResponse = await fetchMtnTransactionStatus(config, token, transactionId);
+    const mappedStatus = statusResponse.status;
+
+    if (mappedStatus !== transaction.paymentStatus) {
+      await prisma.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          paymentStatus: mappedStatus,
+          completedAt: mappedStatus === 'success' || mappedStatus === 'failed' ? new Date() : null,
+          metadata: {
+            ...(transaction.metadata as any),
+            lastProviderStatus: statusResponse.rawStatus,
+          },
+        },
+      });
     }
-  );
-  const data = await response.json();
-  return data.status === 'SUCCESSFUL' ? 'success' : 'failed';
-  */
+
+    return mappedStatus;
+  }
 
   return transaction.paymentStatus as PaymentStatus;
 }

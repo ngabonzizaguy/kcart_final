@@ -17,7 +17,7 @@
 /build
 
 # documentation
-# ADMIN_ACCESS_GUIDE.md
+ADMIN_ACCESS_GUIDE.md
 DECISIONS.md
 DEPLOYMENT.md
 LLM_project_handover_instructions.txt
@@ -44,4 +44,10 @@ yarn-error.log*
 next-env.d.ts
 
 .env
+
+#momo integration
+# MoMoIntegrationAudit.md
+
+/Rwanda_KYC_Document.zip
+/Rwanda_KYC_Document
 
