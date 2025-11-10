@@ -97,6 +97,9 @@ export async function calculateCommission(orderId: string): Promise<void> {
       paymentStatus = 'success'; // Default to success for completed orders
     }
 
+    // Get platform settings for payment routing
+    const platformSettings = await prisma.platformSettings.findFirst();
+
     // Generate transaction ID
     const transactionId = `TXN-${order.orderNumber}-${Date.now()}`;
 
@@ -113,6 +116,11 @@ export async function calculateCommission(orderId: string): Promise<void> {
         vendorAmount,
         isMock: process.env.PAYMENTS_LIVE !== 'true',
         completedAt: new Date(),
+        metadata: {
+          platformPaymentNumber: platformSettings?.platformPaymentNumber || null,
+          escrowStatus: 'HELD',
+          releasedAt: new Date(), // For completed orders, release immediately
+        },
       },
     });
 
@@ -139,7 +147,6 @@ export async function calculateCommission(orderId: string): Promise<void> {
     // Create admin log entry
     await prisma.adminLog.create({
       data: {
-        adminId: 'SYSTEM',
         action: 'commission_calculated',
         targetType: 'order',
         targetId: orderId,
@@ -164,7 +171,6 @@ export async function calculateCommission(orderId: string): Promise<void> {
     // Create error log
     await prisma.adminLog.create({
       data: {
-        adminId: 'SYSTEM',
         action: 'commission_calculation_failed',
         targetType: 'order',
         targetId: orderId,
@@ -233,7 +239,6 @@ export async function reverseCommission(orderId: string, reason?: string): Promi
     // Create admin log
     await prisma.adminLog.create({
       data: {
-        adminId: 'SYSTEM',
         action: 'commission_reversed',
         targetType: 'order',
         targetId: orderId,

@@ -17,6 +17,7 @@ interface CartState {
   vendorSlug: string | null
   vendorName: string | null
   deliveryFee: number
+  acceptedPaymentMethods: string[]
   items: CartItem[]
   isDrawerOpen: boolean
 
@@ -26,6 +27,7 @@ interface CartState {
     vendorSlug: string,
     vendorName: string,
     deliveryFee: number,
+    acceptedPaymentMethods: string[],
     item: Omit<CartItem, 'quantity'>
   ) => void
   removeItem: (menuItemId: string) => void
@@ -49,10 +51,11 @@ export const useCartStore = create<CartState>()(
       vendorSlug: null,
       vendorName: null,
       deliveryFee: 0,
+      acceptedPaymentMethods: [],
       items: [],
       isDrawerOpen: false,
 
-      addItem: (vendorId, vendorSlug, vendorName, deliveryFee, item) => {
+      addItem: (vendorId, vendorSlug, vendorName, deliveryFee, acceptedPaymentMethods, item) => {
         const state = get()
 
         // If cart has items from different vendor, clear cart first
@@ -63,6 +66,7 @@ export const useCartStore = create<CartState>()(
             vendorSlug,
             vendorName,
             deliveryFee,
+            acceptedPaymentMethods,
           })
         }
 
@@ -87,6 +91,7 @@ export const useCartStore = create<CartState>()(
             vendorSlug,
             vendorName,
             deliveryFee,
+            acceptedPaymentMethods,
           })
         }
 
@@ -104,6 +109,7 @@ export const useCartStore = create<CartState>()(
           vendorId: newItems.length === 0 ? null : state.vendorId,
           vendorSlug: newItems.length === 0 ? null : state.vendorSlug,
           vendorName: newItems.length === 0 ? null : state.vendorName,
+          acceptedPaymentMethods: newItems.length === 0 ? [] : state.acceptedPaymentMethods,
         })
       },
 
@@ -149,6 +155,7 @@ export const useCartStore = create<CartState>()(
           vendorSlug: null,
           vendorName: null,
           deliveryFee: 0,
+          acceptedPaymentMethods: [],
           isDrawerOpen: false,
         })
       },
@@ -179,6 +186,7 @@ export const useCartStore = create<CartState>()(
         vendorSlug: state.vendorSlug,
         vendorName: state.vendorName,
         deliveryFee: state.deliveryFee,
+        acceptedPaymentMethods: state.acceptedPaymentMethods,
         items: state.items,
       }),
     }

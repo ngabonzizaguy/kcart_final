@@ -6,11 +6,12 @@ import { createClient } from '@/lib/supabase/client'
 import { formatCurrency, formatRelativeTime } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import OrderStatus from '@/components/customer/OrderStatus'
+import ReviewForm from '@/components/customer/ReviewForm'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { ArrowLeft } from 'lucide-react'
 
-type OrderStatusType = 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+type OrderStatusType = 'new' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled'
 
 interface OrderItem {
   id: string
@@ -51,6 +52,8 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [confirmingDelivery, setConfirmingDelivery] = useState(false)
+  const [reviewSubmitted, setReviewSubmitted] = useState(false)
 
   const slug = params.slug as string
   const orderNumber = params.orderNumber as string
@@ -86,6 +89,44 @@ export default function OrderTrackingPage() {
     fetchOrder()
   }, [orderNumber, showToast])
 
+  const handleDeliveryConfirmation = async (delivered: boolean) => {
+    setConfirmingDelivery(true)
+
+    try {
+      const response = await fetch(`/api/customer/orders/${orderNumber}/delivery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: delivered ? 'delivered' : 'not_delivered' }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update delivery status')
+      }
+
+      const result = await response.json()
+
+      // Update local order status
+      if (order) {
+        setOrder({ ...order, status: delivered ? 'delivered' : order.status })
+      }
+
+      showToast({
+        type: 'success',
+        message: delivered
+          ? 'Thank you for confirming! Your payment has been released to the vendor.'
+          : 'We\'re sorry to hear that. Our team will contact you shortly.',
+      })
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        message: error.message || 'Failed to update delivery status',
+      })
+    } finally {
+      setConfirmingDelivery(false)
+    }
+  }
+
   // Set up real-time subscriptions
   useEffect(() => {
     if (!order) return
@@ -115,6 +156,7 @@ export default function OrderTrackingPage() {
             new: 'Your order has been received',
             preparing: 'Your order is now being prepared',
             ready: `Your order is ready for ${order.deliveryType}`,
+            delivered: 'Your order has been delivered. Thank you!',
             completed: 'Your order is completed',
             cancelled: 'Your order has been cancelled',
           }
@@ -200,6 +242,37 @@ export default function OrderTrackingPage() {
           <OrderStatus currentStatus={order.status} />
         </Card>
 
+        {/* Delivery Confirmation */}
+        {order.status === 'ready' && (
+          <Card className="p-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Confirm Delivery
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Have you received your order? Confirm to release payment to the vendor.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  onClick={() => handleDeliveryConfirmation(true)}
+                  disabled={confirmingDelivery}
+                  className="flex-1 sm:flex-initial min-w-[150px]"
+                >
+                  {confirmingDelivery ? 'Processing...' : 'Delivered ✅'}
+                </Button>
+                <Button
+                  onClick={() => handleDeliveryConfirmation(false)}
+                  variant="outline"
+                  disabled={confirmingDelivery}
+                  className="flex-1 sm:flex-initial min-w-[150px]"
+                >
+                  {confirmingDelivery ? 'Processing...' : 'Not Delivered ❌'}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Order Details */}
         <Card className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">
@@ -281,6 +354,46 @@ export default function OrderTrackingPage() {
             </div>
           </div>
         </Card>
+
+        {/* Review Section - Only show for completed orders */}
+        {(order.status === 'delivered' || order.status === 'completed') && !reviewSubmitted && (
+          <Card className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              How was your order?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Share your experience to help others and improve our service.
+            </p>
+            <ReviewForm
+              vendorId={order.vendorId}
+              orderNumber={orderNumber}
+              onSuccess={() => setReviewSubmitted(true)}
+            />
+          </Card>
+        )}
+
+        {/* Review Success Message */}
+        {reviewSubmitted && (
+          <Card className="p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">✅</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Thank you for your review!
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Your feedback helps us improve our service.
+              </p>
+              <Button
+                onClick={() => router.push(`/${slug}`)}
+                variant="outline"
+              >
+                Back to Menu
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Actions */}
         <div className="flex justify-center">

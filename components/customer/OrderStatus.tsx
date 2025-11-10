@@ -3,7 +3,7 @@
 import { Clock, ChefHat, CheckCircle, Package, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type OrderStatusType = 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+type OrderStatusType = 'new' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled'
 
 interface OrderStatusProps {
   currentStatus: OrderStatusType
@@ -32,6 +32,12 @@ const statusSteps: {
     label: 'Ready',
     icon: CheckCircle,
     description: 'Your order is ready for pickup/delivery',
+  },
+  {
+    status: 'delivered',
+    label: 'Delivered',
+    icon: Package,
+    description: 'Your order has been delivered. Thank you!',
   },
   {
     status: 'completed',

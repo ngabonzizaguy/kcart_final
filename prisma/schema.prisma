@@ -222,7 +222,8 @@ model Order {
   // Timestamps
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
-  completedAt       DateTime?
+  deliveredAt       DateTime?   // When customer confirms delivery
+  completedAt       DateTime?   // When order is marked completed (final state)
 
   // Relations
   items             OrderItem[]
@@ -348,7 +349,8 @@ model PlatformSettings {
   
   // Payment Methods
   acceptedPaymentMethods      String[]  @default(["cash_on_delivery", "mtn_mobile_money", "airtel_mobile_money"])
-  
+  platformPaymentNumber      String?   // Admin-configured phone for all payments
+
   // Branding
   platformName                String    @default("DeliGo")
   platformLogo                String?
@@ -365,17 +367,17 @@ model PlatformSettings {
 // Admin Audit Logs
 model AdminLog {
   id          String    @id @default(uuid())
-  adminId     String
-  admin       Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  
+  adminId     String?   // Optional - can be null for system actions
+  admin       Admin?    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
   action      String    // Action type (e.g., "vendor_verified", "payout_processed")
   targetType  String    // Entity affected (e.g., "vendor", "payout", "order")
   targetId    String    // ID of affected entity
   details     Json      // Action details (before/after values, reason, etc.)
-  
+
   ipAddress   String?
   timestamp   DateTime  @default(now())
-  
+
   @@index([adminId])
   @@index([action])
   @@index([targetType])

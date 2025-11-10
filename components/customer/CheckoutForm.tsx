@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import TextArea from '@/components/ui/TextArea'
 import Card, { CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
+import PaymentConfirmationModal from '@/components/modals/PaymentConfirmationModal'
 
 // Validation schema
 const checkoutFormSchema = z.object({
@@ -64,6 +65,8 @@ export default function CheckoutForm({
   const { clearCart } = useCartStore()
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [pendingOrderData, setPendingOrderData] = useState<any>(null)
 
   const {
     register,
@@ -163,6 +166,7 @@ export default function CheckoutForm({
     setLoading(true)
 
     try {
+      // Prepare order data
       const orderData = {
         vendorId,
         customerName: data.customerName,
@@ -183,6 +187,33 @@ export default function CheckoutForm({
         subtotal,
         deliveryFee: calculatedDeliveryFee,
         total,
+      }
+
+      // Store pending order data and show payment confirmation modal
+      setPendingOrderData(orderData)
+      setShowPaymentModal(true)
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: error.message,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePaymentConfirmation = async (delivered: boolean) => {
+    if (!pendingOrderData) return
+
+    setLoading(true)
+    setShowPaymentModal(false)
+
+    try {
+      // Add delivery confirmation to order data
+      const orderData = {
+        ...pendingOrderData,
+        deliveryConfirmed: delivered,
       }
 
       const response = await fetch('/api/customer/orders', {
@@ -225,7 +256,13 @@ export default function CheckoutForm({
       })
     } finally {
       setLoading(false)
+      setPendingOrderData(null)
     }
+  }
+
+  const handlePaymentModalClose = () => {
+    setShowPaymentModal(false)
+    setPendingOrderData(null)
   }
 
   return (
@@ -513,6 +550,20 @@ export default function CheckoutForm({
           </div>
         )}
       </form>
+
+      {/* Payment Confirmation Modal */}
+      {pendingOrderData && (
+        <PaymentConfirmationModal
+          isOpen={showPaymentModal}
+          onClose={handlePaymentModalClose}
+          onConfirm={handlePaymentConfirmation}
+          orderData={{
+            total: pendingOrderData.total,
+            paymentMethod: pendingOrderData.paymentMethod,
+          }}
+          isLoading={loading}
+        />
+      )}
     </Card>
   )
 }

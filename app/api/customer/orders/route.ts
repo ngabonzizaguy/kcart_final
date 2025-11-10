@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { createEscrowTransaction } from '@/lib/payments/escrow'
 
 // Force Node.js runtime for Prisma compatibility
 export const runtime = 'nodejs'
@@ -181,6 +182,15 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Create escrow transaction for payment holding
+    try {
+      await createEscrowTransaction(order.id)
+    } catch (escrowError) {
+      console.error('Failed to create escrow transaction:', escrowError)
+      // Don't fail the order creation if escrow fails, but log it
+      // The escrow can be created later by admin or cron job
+    }
 
     return NextResponse.json(
       {

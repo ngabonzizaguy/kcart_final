@@ -50,6 +50,7 @@ interface Vendor {
   coverUrls: string[] | null
   address: string | null
   businessPhone: string | null
+  acceptedPaymentMethods: string[]
   isOnline: boolean
   deliveryFee: number
   cuisineTags: string[]
@@ -298,6 +299,7 @@ export default function StorefrontClient({ vendor: initialVendor }: StorefrontCl
       vendor.slug,
       vendor.businessName,
       vendor.deliveryFee,
+      vendor.acceptedPaymentMethods,
       {
         menuItemId: item.id,
         name: item.name,
@@ -395,18 +397,24 @@ export default function StorefrontClient({ vendor: initialVendor }: StorefrontCl
               <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-green-900 font-semibold text-sm md:text-base">
-                  🎉 Your order has been placed successfully! We'll notify you once it's ready.
+                  🎉 Your order has been placed successfully!
                 </p>
                 <p className="text-green-700 text-sm mt-1">
-                  Order #{orderNumber}
+                  Your payment is securely held by DeliGo until your order is delivered.
                 </p>
-                <a
-                  href={`/${vendor.slug}/orders/${orderNumber}`}
-                  className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-green-700 hover:text-green-800 underline"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Track your order
-                </a>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-green-700 text-sm font-medium">
+                    Order #{orderNumber}
+                  </span>
+                  <span className="text-green-600 text-xs">•</span>
+                  <a
+                    href={`/${vendor.slug}/orders/${orderNumber}`}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-green-700 hover:text-green-800 underline"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Track Your Order
+                  </a>
+                </div>
               </div>
               <button
                 onClick={handleDismissBanner}

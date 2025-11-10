@@ -25,6 +25,7 @@ export default async function StorefrontPage({ params }: StorefrontPageProps) {
       coverUrls: true,
       address: true,
       businessPhone: true,
+      acceptedPaymentMethods: true,
       isOnline: true,
       deliveryFee: true,
       cuisineTags: true,
