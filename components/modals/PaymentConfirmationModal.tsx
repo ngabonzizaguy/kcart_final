@@ -9,7 +9,7 @@ import { formatCurrency } from '@/lib/utils'
 interface PaymentConfirmationModalProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: (delivered: boolean) => void
+  onConfirm: () => void
   orderData: {
     total: number
     paymentMethod: string
