@@ -203,23 +203,18 @@ export default function CheckoutForm({
     }
   }
 
-  const handlePaymentConfirmation = async (delivered: boolean) => {
+  const handlePaymentProcessing = async () => {
     if (!pendingOrderData) return
 
     setLoading(true)
     setShowPaymentModal(false)
 
     try {
-      // Add delivery confirmation to order data
-      const orderData = {
-        ...pendingOrderData,
-        deliveryConfirmed: delivered,
-      }
-
+      // Process payment first, then create order
       const response = await fetch('/api/customer/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(pendingOrderData),
       })
 
       if (!response.ok) {
@@ -241,13 +236,19 @@ export default function CheckoutForm({
         console.error('Failed to save recent order to localStorage:', error)
       }
 
-      // Clear cart and navigate to storefront with success banner
+      // Clear cart and navigate to order tracking page
       clearCart()
       showToast({
         type: 'success',
-        message: 'Order placed successfully!',
+        title: 'Order Confirmed! 🎉',
+        message: `Order #${order.orderNumber} placed successfully. Check your order tracking for updates.`,
+        duration: 8000,
+        action: {
+          label: 'Track Order',
+          onClick: () => router.push(`/${vendorSlug}/orders/${order.orderNumber}`)
+        }
       })
-      router.push(`/${vendorSlug}?orderPlaced=true&orderNumber=${order.orderNumber}`)
+      router.push(`/${vendorSlug}/orders/${order.orderNumber}?payment=success`)
     } catch (error: any) {
       showToast({
         type: 'error',
