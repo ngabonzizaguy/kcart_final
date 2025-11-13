@@ -168,10 +168,10 @@ export default function PaymentConfirmationModal({
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={!selectedOption || isLoading}
+              disabled={isLoading}
               className="flex-1"
             >
-              {isLoading ? 'Processing...' : 'Confirm & Continue'}
+              {isLoading ? 'Processing...' : 'Confirm & Pay'}
             </Button>
           </div>
         </div>
