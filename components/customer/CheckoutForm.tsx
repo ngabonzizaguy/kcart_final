@@ -557,7 +557,7 @@ export default function CheckoutForm({
         <PaymentConfirmationModal
           isOpen={showPaymentModal}
           onClose={handlePaymentModalClose}
-          onConfirm={handlePaymentConfirmation}
+          onConfirm={handlePaymentProcessing}
           orderData={{
             total: pendingOrderData.total,
             paymentMethod: pendingOrderData.paymentMethod,
