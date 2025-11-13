@@ -137,83 +137,23 @@ export default function PaymentConfirmationModal({
             </div>
           </div>
 
-          {/* Delivery Confirmation */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900">Delivery Status</h3>
-            <p className="text-sm text-gray-600">
-              Please confirm your delivery status to proceed with payment processing:
-            </p>
-
-            <div className="space-y-3">
-              {/* Delivered Option */}
-              <button
-                onClick={() => setSelectedOption('delivered')}
-                disabled={isLoading}
-                className={`w-full p-4 rounded-xl border-2 transition-all ${
-                  selectedOption === 'delivered'
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    selectedOption === 'delivered' ? 'bg-green-500' : 'bg-gray-100'
-                  }`}>
-                    <CheckCircle className={`w-5 h-5 ${
-                      selectedOption === 'delivered' ? 'text-white' : 'text-gray-400'
-                    }`} />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-gray-900">
-                      Order Delivered ✅
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      I have received my order. Release payment to vendor.
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Not Delivered Option */}
-              <button
-                onClick={() => setSelectedOption('not_delivered')}
-                disabled={isLoading}
-                className={`w-full p-4 rounded-xl border-2 transition-all ${
-                  selectedOption === 'not_delivered'
-                    ? 'border-red-500 bg-red-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    selectedOption === 'not_delivered' ? 'bg-red-500' : 'bg-gray-100'
-                  }`}>
-                    <XCircle className={`w-5 h-5 ${
-                      selectedOption === 'not_delivered' ? 'text-white' : 'text-gray-400'
-                    }`} />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-gray-900">
-                      Not Delivered ❌
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      I have not received my order. Report delivery issue.
-                    </div>
-                  </div>
-                </div>
-              </button>
-            </div>
-
-            {selectedOption === 'not_delivered' && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                <div className="flex gap-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-orange-800">
-                    Our team will review your report and contact you about the delivery issue.
-                  </p>
+          {/* Payment Method Information */}
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+            <div className="flex gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">
+                  {getPaymentMethodIcon(orderData.paymentMethod)}
                 </div>
               </div>
-            )}
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  {getPaymentMethodLabel(orderData.paymentMethod)}
+                </h3>
+                <p className="text-sm text-gray-700">
+                  {getPaymentMethodMessage(orderData.paymentMethod)}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Action Buttons */}
