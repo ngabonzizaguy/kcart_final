@@ -25,12 +25,8 @@ export default function PaymentConfirmationModal({
   orderData,
   isLoading = false
 }: PaymentConfirmationModalProps) {
-  const [selectedOption, setSelectedOption] = useState<'delivered' | 'not_delivered' | null>(null)
-
   const handleConfirm = () => {
-    if (selectedOption) {
-      onConfirm(selectedOption === 'delivered')
-    }
+    onConfirm()
   }
 
   const getPaymentMethodLabel = (method: string) => {
