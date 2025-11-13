@@ -42,6 +42,32 @@ export default function PaymentConfirmationModal({
     }
   }
 
+  const getPaymentMethodMessage = (method: string) => {
+    switch (method) {
+      case 'cash_on_delivery':
+        return 'Payment will be collected on delivery (funds held in escrow)'
+      case 'mtn_momo':
+        return 'You will receive an STK prompt on your phone to confirm payment'
+      case 'airtel_money':
+        return 'You will receive an STK prompt on your phone to confirm payment'
+      default:
+        return 'Payment will be processed securely'
+    }
+  }
+
+  const getPaymentMethodIcon = (method: string) => {
+    switch (method) {
+      case 'cash_on_delivery':
+        return '💵'
+      case 'mtn_momo':
+        return '📱'
+      case 'airtel_money':
+        return '📱'
+      default:
+        return '💳'
+    }
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
